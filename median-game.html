@@ -1,0 +1,809 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>The Splitting Game</title>
+<link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800;900&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg: #fafbff;
+  --card: #fff;
+  --blue: #4361ee;
+  --blue-l: #eef1ff;
+  --teal: #0d9488;
+  --teal-l: #e6f7f6;
+  --green: #16a34a;
+  --green-l: #dcfce7;
+  --red: #dc2626;
+  --red-l: #fee2e2;
+  --amber: #d97706;
+  --amber-l: #fef3c7;
+  --purple: #7c3aed;
+  --purple-l: #ede9fe;
+  --text: #1e1e2e;
+  --text2: #555;
+  --text3: #999;
+  --border: #e5e7eb;
+  --shadow: 0 4px 24px rgba(0,0,0,0.07);
+}
+
+* { margin:0; padding:0; box-sizing:border-box; }
+body { background:var(--bg); color:var(--text); font-family:'Nunito',sans-serif; }
+
+.app { max-width:700px; margin:0 auto; padding:1.5rem 1rem 4rem; }
+
+/* Progress bar */
+.progress-bar {
+  display:flex; gap:6px; margin-bottom:2rem;
+}
+.progress-dot {
+  flex:1; height:6px; border-radius:3px; background:var(--border); transition:all 0.4s;
+}
+.progress-dot.done { background:var(--blue); }
+.progress-dot.active { background:var(--blue); animation: pulse 1.5s infinite; }
+@keyframes pulse { 0%,100%{ opacity:1; } 50%{ opacity:0.5; } }
+
+/* Level screen */
+.level {
+  display:none;
+  animation: fadeUp 0.4s ease;
+}
+.level.active { display:block; }
+@keyframes fadeUp {
+  from { opacity:0; transform:translateY(15px); }
+  to { opacity:1; transform:translateY(0); }
+}
+
+.level-badge {
+  display:inline-block;
+  font-size:0.7rem; font-weight:800;
+  letter-spacing:2px; text-transform:uppercase;
+  padding:4px 14px; border-radius:20px;
+  margin-bottom:0.75rem;
+}
+.level-badge.story { background:var(--purple-l); color:var(--purple); }
+.level-badge.challenge { background:var(--amber-l); color:var(--amber); }
+.level-badge.code { background:var(--teal-l); color:var(--teal); }
+.level-badge.boss { background:var(--red-l); color:var(--red); }
+
+.level h2 {
+  font-size:1.6rem; font-weight:800; margin-bottom:0.5rem;
+}
+.level p { color:var(--text2); margin-bottom:1rem; font-size:0.95rem; line-height:1.7; }
+.level p strong { color:var(--text); }
+
+/* Cards */
+.card {
+  background:var(--card); border-radius:16px; box-shadow:var(--shadow);
+  padding:1.5rem; margin:1.25rem 0; border:1px solid #eef;
+}
+
+/* Row of number cells */
+.row-label {
+  font-size:0.75rem; font-weight:700; text-transform:uppercase;
+  letter-spacing:1.5px; margin-bottom:6px;
+}
+.row-label.a { color:var(--blue); }
+.row-label.b { color:var(--teal); }
+
+.num-row {
+  display:flex; gap:0; margin-bottom:0.5rem; flex-wrap:wrap;
+}
+
+.cell {
+  width:48px; height:48px;
+  display:flex; align-items:center; justify-content:center;
+  font-family:'JetBrains Mono',monospace;
+  font-size:1.05rem; font-weight:600;
+  border:2px solid var(--border);
+  background:#fff; color:var(--text);
+  transition: all 0.3s;
+  position:relative; cursor:default;
+}
+.cell:first-child { border-radius:12px 4px 4px 12px; }
+.cell:last-child { border-radius:4px 12px 12px 4px; }
+.cell:only-child { border-radius:12px; }
+
+.cell.a-on { background:var(--blue); color:#fff; border-color:var(--blue); }
+.cell.b-on { background:var(--teal); color:#fff; border-color:var(--teal); }
+.cell.a-off { background:var(--blue-l); color:var(--blue); border-color:#d0daff; }
+.cell.b-off { background:var(--teal-l); color:var(--teal); border-color:#b0e4e2; }
+
+.cell .mini-tag {
+  position:absolute; bottom:-18px;
+  font-size:0.6rem; font-weight:700;
+  padding:1px 6px; border-radius:4px;
+  white-space:nowrap;
+}
+.cell .mini-tag.a-t { background:var(--blue); color:#fff; }
+.cell .mini-tag.b-t { background:var(--teal); color:#fff; }
+.cell .mini-tag.gray-t { background:#777; color:#fff; }
+
+/* Slider */
+.slider-area {
+  margin:1.5rem 0;
+  text-align:center;
+}
+.slider-label {
+  font-size:0.9rem; color:var(--text2); margin-bottom:8px;
+}
+.slider-label strong { color:var(--text); }
+.slider-track {
+  display:flex; align-items:center; justify-content:center; gap:8px;
+  margin-bottom:8px;
+}
+input[type="range"] {
+  -webkit-appearance:none; appearance:none;
+  width:100%; max-width:300px; height:8px;
+  border-radius:4px; background:var(--border);
+  outline:none;
+}
+input[type="range"]::-webkit-slider-thumb {
+  -webkit-appearance:none; appearance:none;
+  width:28px; height:28px; border-radius:50%;
+  background:var(--blue); cursor:pointer;
+  border:3px solid #fff; box-shadow:0 2px 8px rgba(0,0,0,0.15);
+}
+.slider-val {
+  font-family:'JetBrains Mono',monospace;
+  font-size:1.1rem; font-weight:700; color:var(--blue);
+  min-width:24px;
+}
+
+/* Check rows */
+.checks { margin:1rem 0; }
+.chk {
+  display:flex; align-items:center; gap:10px;
+  padding:6px 0; font-size:0.9rem;
+}
+.chk-icon {
+  width:26px; height:26px; border-radius:50%;
+  display:flex; align-items:center; justify-content:center;
+  font-size:0.75rem; font-weight:800; flex-shrink:0;
+}
+.chk-icon.ok { background:var(--green-l); color:var(--green); }
+.chk-icon.no { background:var(--red-l); color:var(--red); }
+
+/* Result banners */
+.banner {
+  border-radius:14px; padding:1.25rem; text-align:center;
+  margin:1rem 0;
+}
+.banner.win { background:var(--green-l); border:2px solid #a7f3d0; }
+.banner.lose { background:var(--red-l); border:2px solid #fca5a5; }
+.banner.hint { background:var(--amber-l); border:2px solid #fde68a; }
+.banner .big { font-size:1.4rem; font-weight:800; }
+.banner.win .big { color:var(--green); }
+.banner.lose .big { color:var(--red); }
+.banner.hint .big { color:var(--amber); }
+.banner .sub { font-size:0.85rem; color:var(--text2); margin-top:4px; }
+
+/* Buttons */
+.btn {
+  font-family:'Nunito',sans-serif;
+  font-size:0.9rem; font-weight:700;
+  padding:10px 28px; border-radius:12px;
+  border:none; cursor:pointer;
+  transition:all 0.2s;
+}
+.btn:hover { transform:translateY(-1px); }
+.btn.primary { background:var(--blue); color:#fff; }
+.btn.primary:hover { background:#3451c7; }
+.btn.outline { background:#fff; color:var(--text); border:2px solid var(--border); }
+.btn.outline:hover { border-color:var(--blue); color:var(--blue); }
+.btn.small { font-size:0.8rem; padding:6px 16px; border-radius:8px; }
+
+.btn-row {
+  display:flex; gap:10px; justify-content:center; margin-top:1.5rem;
+  flex-wrap:wrap;
+}
+
+/* Thought box */
+.insight {
+  background:var(--blue-l); border-radius:14px;
+  padding:1.25rem; margin:1.25rem 0;
+  border-left:4px solid var(--blue);
+}
+.insight.teal { background:var(--teal-l); border-left-color:var(--teal); }
+.insight.purple { background:var(--purple-l); border-left-color:var(--purple); }
+.insight.amber { background:var(--amber-l); border-left-color:var(--amber); }
+.insight .ins-title { font-size:0.85rem; font-weight:800; margin-bottom:4px; }
+.insight p { font-size:0.88rem; color:var(--text2); margin-bottom:0; }
+
+/* Code */
+.code-box {
+  background:#1e1e2e; color:#cdd6f4;
+  border-radius:12px; padding:1.25rem 1.5rem;
+  font-family:'JetBrains Mono',monospace;
+  font-size:0.8rem; line-height:1.9;
+  overflow-x:auto; margin:1rem 0;
+}
+.code-box .kw { color:#cba6f7; }
+.code-box .fn { color:#89b4fa; }
+.code-box .num { color:#fab387; }
+.code-box .cm { color:#6c7086; }
+.code-box .type { color:#f9e2af; }
+
+/* Merged row */
+.merged-row {
+  display:flex; gap:0; justify-content:center; margin:1rem 0; flex-wrap:wrap;
+}
+.m-cell {
+  width:40px; height:40px;
+  display:flex; align-items:center; justify-content:center;
+  font-family:'JetBrains Mono',monospace;
+  font-size:0.9rem; font-weight:600;
+  border:2px solid var(--border); background:#fff;
+}
+.m-cell:first-child { border-radius:10px 0 0 10px; }
+.m-cell:last-child { border-radius:0 10px 10px 0; }
+.m-cell.hl { background:var(--amber-l); border-color:var(--amber); color:var(--amber); }
+.m-cell.from-a { color:var(--blue); }
+.m-cell.from-b { color:var(--teal); }
+
+/* Counters */
+.counter-row {
+  display:flex; gap:1.5rem; justify-content:center; flex-wrap:wrap;
+  margin:1rem 0;
+}
+.counter { text-align:center; }
+.counter .c-val {
+  font-family:'JetBrains Mono',monospace;
+  font-size:2rem; font-weight:800;
+}
+.counter .c-label { font-size:0.75rem; color:var(--text3); }
+
+@media(max-width:500px) {
+  .cell { width:40px; height:40px; font-size:0.9rem; }
+  .m-cell { width:34px; height:34px; font-size:0.8rem; }
+  .level h2 { font-size:1.3rem; }
+}
+</style>
+</head>
+<body>
+
+<div class="app">
+  <div class="progress-bar" id="progBar"></div>
+  <div id="levels"></div>
+</div>
+
+<script>
+const LEVELS = [
+  // 0: What is a median
+  {
+    badge:'story', badgeText:'Level 1',
+    title:'What\'s the middle number?',
+    render: renderL0
+  },
+  // 1: Can you split?
+  {
+    badge:'challenge', badgeText:'Level 2',
+    title:'The splitting game',
+    render: renderL1
+  },
+  // 2: The rule
+  {
+    badge:'story', badgeText:'Level 3',
+    title:'You just discovered a rule!',
+    render: renderL2
+  },
+  // 3: Harder challenge
+  {
+    badge:'challenge', badgeText:'Level 4',
+    title:'Can you find it faster?',
+    render: renderL3
+  },
+  // 4: You invented binary search
+  {
+    badge:'story', badgeText:'Level 5',
+    title:'You just invented binary search!',
+    render: renderL4
+  },
+  // 5: Edge cases
+  {
+    badge:'challenge', badgeText:'Level 6',
+    title:'What if one side is empty?',
+    render: renderL5
+  },
+  // 6: Why swap
+  {
+    badge:'story', badgeText:'Level 7',
+    title:'One last trick',
+    render: renderL6
+  },
+  // 7: Full code reveal
+  {
+    badge:'boss', badgeText:'Final Level',
+    title:'You already know the whole algorithm!',
+    render: renderL7
+  }
+];
+
+let currentLevel = 0;
+
+function init() {
+  renderProgress();
+  renderLevel();
+}
+
+function renderProgress() {
+  const bar = document.getElementById('progBar');
+  bar.innerHTML = '';
+  for (let i = 0; i < LEVELS.length; i++) {
+    const d = document.createElement('div');
+    d.className = 'progress-dot' + (i < currentLevel ? ' done' : '') + (i === currentLevel ? ' active' : '');
+    bar.appendChild(d);
+  }
+}
+
+function renderLevel() {
+  const container = document.getElementById('levels');
+  container.innerHTML = '';
+  const div = document.createElement('div');
+  div.className = 'level active';
+  const L = LEVELS[currentLevel];
+
+  let header = '<span class="level-badge ' + L.badge + '">' + L.badgeText + '</span>';
+  header += '<h2>' + L.title + '</h2>';
+  div.innerHTML = header;
+
+  const content = document.createElement('div');
+  div.appendChild(content);
+  container.appendChild(div);
+
+  L.render(content);
+
+  renderProgress();
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+
+function nextLevel() {
+  if (currentLevel < LEVELS.length - 1) {
+    currentLevel++;
+    renderLevel();
+  }
+}
+
+function fmt(v) {
+  if (v === -Infinity) return '-∞';
+  if (v === Infinity) return '+∞';
+  return v;
+}
+
+// ========== LEVEL 0: What is median ==========
+function renderL0(el) {
+  const nums = [3, 7, 12, 18, 25, 31, 44];
+
+  let h = '<p>Here are some numbers, already sorted:</p>';
+  h += '<div class="merged-row">';
+  nums.forEach((n,i) => {
+    h += '<div class="m-cell' + (i === 3 ? ' hl' : '') + '">' + n + '</div>';
+  });
+  h += '</div>';
+
+  h += '<p>The <strong>median</strong> is just the <strong>middle one</strong>. Count from either side — you land on <strong style="color:var(--amber);">18</strong>.</p>';
+  h += '<p>Half the numbers are smaller, half are bigger. That\'s it. That\'s median.</p>';
+
+  h += '<div class="insight"><div class="ins-title">What if there\'s an even count?</div>';
+  h += '<p>Average the two middle numbers. [3, 7, <strong>12, 18</strong>, 25, 31] → (12+18)/2 = 15</p></div>';
+
+  h += '<p>Now here\'s the challenge: what if the numbers come from <strong>two separate sorted lists</strong>?</p>';
+
+  h += '<div class="btn-row"><button class="btn primary" onclick="nextLevel()">Let\'s see →</button></div>';
+  el.innerHTML = h;
+}
+
+// ========== LEVEL 1: Splitting game ==========
+function renderL1(el) {
+  const A = [1, 4, 7, 9];
+  const B = [2, 3, 5, 8, 10, 11];
+  const total = A.length + B.length;
+  const half = Math.floor((total + 1) / 2);
+
+  let h = '<p>Two sorted lists. <strong>10 numbers total</strong>. The left half needs <strong>5</strong>.</p>';
+  h += '<p>Use the slider to decide: <strong>how many from the blue list go to the left half?</strong> The green list fills the rest automatically.</p>';
+
+  h += '<div class="card" id="l1card"></div>';
+
+  h += '<div class="btn-row"><button class="btn primary" id="l1next" style="display:none;" onclick="nextLevel()">I see the pattern →</button></div>';
+
+  el.innerHTML = h;
+
+  let foundIt = false;
+
+  function render1(fromA) {
+    const fromB = half - fromA;
+    const leftA = fromA > 0 ? A[fromA-1] : -Infinity;
+    const rightA = fromA < A.length ? A[fromA] : Infinity;
+    const leftB = fromB > 0 ? B[fromB-1] : -Infinity;
+    const rightB = fromB < B.length ? B[fromB] : Infinity;
+    const ok1 = leftA <= rightB;
+    const ok2 = leftB <= rightA;
+    const valid = ok1 && ok2;
+
+    let c = '';
+
+    c += '<div class="slider-area">';
+    c += '<div class="slider-label">Take <strong id="sliderOut">' + fromA + '</strong> from blue, <strong style="color:var(--teal)">' + fromB + '</strong> from green</div>';
+    c += '<div class="slider-track">';
+    c += '<span style="font-size:0.8rem;color:var(--text3);">0</span>';
+    c += '<input type="range" min="0" max="' + A.length + '" value="' + fromA + '" id="l1slider">';
+    c += '<span style="font-size:0.8rem;color:var(--text3);">' + A.length + '</span>';
+    c += '</div></div>';
+
+    c += '<div class="row-label a">Blue list</div><div class="num-row">';
+    for (let i = 0; i < A.length; i++) {
+      const on = i < fromA;
+      let tag = '';
+      if (i === fromA - 1 && fromA > 0) tag = '<span class="mini-tag a-t">leftA</span>';
+      if (i === fromA) tag = '<span class="mini-tag gray-t">rightA</span>';
+      c += '<div class="cell ' + (on ? 'a-on' : 'a-off') + '" style="position:relative;">' + A[i] + tag + '</div>';
+    }
+    c += '</div>';
+
+    c += '<div class="row-label b" style="margin-top:1.5rem;">Green list</div><div class="num-row">';
+    for (let i = 0; i < B.length; i++) {
+      const on = i < fromB;
+      let tag = '';
+      if (i === fromB - 1 && fromB > 0) tag = '<span class="mini-tag b-t">leftB</span>';
+      if (i === fromB) tag = '<span class="mini-tag gray-t">rightB</span>';
+      c += '<div class="cell ' + (on ? 'b-on' : 'b-off') + '" style="position:relative;">' + B[i] + tag + '</div>';
+    }
+    c += '</div>';
+
+    c += '<div class="checks" style="margin-top:1.5rem;">';
+    c += '<div class="chk"><div class="chk-icon ' + (ok1?'ok':'no') + '">' + (ok1?'✓':'✗') + '</div>';
+    c += '<span>Blue\'s last on left (' + fmt(leftA) + ') ≤ Green\'s first on right (' + fmt(rightB) + ')?</span></div>';
+    c += '<div class="chk"><div class="chk-icon ' + (ok2?'ok':'no') + '">' + (ok2?'✓':'✗') + '</div>';
+    c += '<span>Green\'s last on left (' + fmt(leftB) + ') ≤ Blue\'s first on right (' + fmt(rightA) + ')?</span></div>';
+    c += '</div>';
+
+    if (valid) {
+      const med = total % 2 === 1 ? Math.max(leftA, leftB) : (Math.max(leftA, leftB) + Math.min(rightA, rightB)) / 2;
+      c += '<div class="banner win"><div class="big">Median = ' + med + '</div><div class="sub">Both checks pass! You found the perfect split.</div></div>';
+      if (!foundIt) {
+        foundIt = true;
+        var nb = document.getElementById('l1next');
+        if (nb) nb.style.display = '';
+      }
+    } else if (!ok1) {
+      c += '<div class="banner lose"><div class="big">Too many from blue!</div><div class="sub">' + leftA + ' is bigger than ' + fmt(rightB) + '. Try sliding left.</div></div>';
+    } else {
+      c += '<div class="banner hint"><div class="big">Too few from blue!</div><div class="sub">' + fmt(leftB) + ' is bigger than ' + fmt(rightA) + '. Try sliding right.</div></div>';
+    }
+
+    document.getElementById('l1card').innerHTML = c;
+    document.getElementById('l1slider').oninput = function() { render1(parseInt(this.value)); };
+  }
+
+  render1(2);
+}
+
+// ========== LEVEL 2: The rule you discovered ==========
+function renderL2(el) {
+  let h = '<p>Look what you just figured out by playing:</p>';
+
+  h += '<div class="insight"><div class="ins-title">Rule 1: One choice controls everything</div>';
+  h += '<p>You only chose how many from blue. Green was automatic. <strong>One slider controls the whole split.</strong></p></div>';
+
+  h += '<div class="insight teal"><div class="ins-title">Rule 2: The check is simple</div>';
+  h += '<p>You only checked <strong>2 things</strong> — the cross-pairs. Within each list, numbers are already sorted, so they\'re fine.</p></div>';
+
+  h += '<div class="insight amber"><div class="ins-title">Rule 3: Wrong answers tell you which way to go</div>';
+  h += '<p>"Too many from blue" → slide left. "Too few" → slide right. <strong>You always know which direction to move.</strong></p></div>';
+
+  h += '<p>So you have a slider (0 to 4), you try a position, and the result tells you LEFT or RIGHT. Does that remind you of anything?</p>';
+
+  h += '<div class="btn-row"><button class="btn primary" onclick="nextLevel()">Hmm, let me think... →</button></div>';
+  el.innerHTML = h;
+}
+
+// ========== LEVEL 3: Harder challenge — find it in fewest tries ==========
+function renderL3(el) {
+  const A = [10, 20, 30, 40, 50, 60];
+  const B = [5, 15, 25, 35, 45, 55, 65, 75];
+  const total = A.length + B.length;
+  const half = Math.floor((total + 1) / 2);
+
+  let h = '<p>New lists, bigger this time. <strong>Find the correct split in as few tries as possible.</strong></p>';
+  h += '<p>Hint: what\'s the smartest first guess?</p>';
+
+  h += '<div class="card" id="l3card"></div>';
+  h += '<div class="btn-row"><button class="btn primary" id="l3next" style="display:none;" onclick="nextLevel()">I see how to be fast →</button></div>';
+
+  el.innerHTML = h;
+
+  let tries = 0;
+  let found3 = false;
+  let history = [];
+
+  function render3() {
+    let c = '';
+
+    c += '<div style="text-align:center;margin-bottom:1rem;">';
+    c += '<span style="font-size:0.85rem;color:var(--text3);">Tries: </span>';
+    c += '<span style="font-family:JetBrains Mono,monospace;font-size:1.1rem;font-weight:700;color:var(--blue);">' + tries + '</span>';
+    c += '</div>';
+
+    c += '<div class="row-label a">Blue (6 numbers)</div><div class="num-row" style="margin-bottom:0.5rem;">';
+    A.forEach((n,i) => { c += '<div class="cell a-off">' + n + '</div>'; });
+    c += '</div>';
+    c += '<div class="row-label b">Green (8 numbers)</div><div class="num-row">';
+    B.forEach((n,i) => { c += '<div class="cell b-off">' + n + '</div>'; });
+    c += '</div>';
+
+    c += '<p style="margin-top:1rem;font-size:0.9rem;color:var(--text2);">Left half needs <strong>' + half + '</strong> total. How many from blue?</p>';
+    c += '<div style="display:flex;gap:6px;flex-wrap:wrap;justify-content:center;margin:0.75rem 0;">';
+    for (let i = 0; i <= A.length; i++) {
+      c += '<button class="btn small outline" onclick="tryGuess3(' + i + ')">' + i + '</button>';
+    }
+    c += '</div>';
+
+    if (history.length > 0) {
+      c += '<div style="margin-top:1rem;border-top:1px solid var(--border);padding-top:1rem;">';
+      history.forEach((item, idx) => {
+        c += '<div style="display:flex;align-items:center;gap:8px;padding:4px 0;font-size:0.85rem;">';
+        c += '<span style="font-family:JetBrains Mono,monospace;color:var(--text3);min-width:60px;">Try ' + (idx+1) + ':</span>';
+        c += '<span style="font-weight:700;color:var(--blue);">fromA=' + item.fromA + '</span>';
+        c += '<span style="color:var(--text3);">→</span>';
+        if (item.valid) {
+          c += '<span style="color:var(--green);font-weight:700;">✓ Found it! Median = ' + item.median + '</span>';
+        } else {
+          c += '<span style="color:' + (item.tooMany ? 'var(--red)' : 'var(--amber)') + ';font-weight:600;">' + (item.tooMany ? '← too many' : '→ too few') + '</span>';
+        }
+        c += '</div>';
+      });
+      c += '</div>';
+    }
+
+    if (found3) {
+      c += '<div class="banner win"><div class="big">Found it in ' + tries + ' tries!</div>';
+      if (tries <= 3) {
+        c += '<div class="sub">Amazing! You went straight to the middle each time — that\'s binary search!</div>';
+      } else {
+        c += '<div class="sub">Next time, try always guessing the middle of your remaining range. It\'s always fastest!</div>';
+      }
+      c += '</div>';
+      var nb = document.getElementById('l3next');
+      if (nb) nb.style.display = '';
+    }
+
+    document.getElementById('l3card').innerHTML = c;
+  }
+
+  window.tryGuess3 = function(fromA) {
+    if (found3) return;
+    tries++;
+    const fromB = half - fromA;
+    const leftA = fromA > 0 ? A[fromA-1] : -Infinity;
+    const rightA = fromA < A.length ? A[fromA] : Infinity;
+    const leftB = fromB > 0 ? B[fromB-1] : -Infinity;
+    const rightB = fromB < B.length ? B[fromB] : Infinity;
+    const ok1 = leftA <= rightB;
+    const ok2 = leftB <= rightA;
+    const valid = ok1 && ok2;
+
+    let entry = { fromA, valid, tooMany: leftA > rightB };
+    if (valid) {
+      const med = total % 2 === 1 ? Math.max(leftA, leftB) : (Math.max(leftA, leftB) + Math.min(rightA, rightB)) / 2;
+      entry.median = med;
+      found3 = true;
+    }
+    history.push(entry);
+    render3();
+  };
+
+  render3();
+}
+
+// ========== LEVEL 4: You invented binary search ==========
+function renderL4(el) {
+  let h = '<p>The fastest strategy you just used has a name: <strong>binary search</strong>.</p>';
+
+  h += '<p>Instead of trying 0, 1, 2, 3, 4, 5, 6... you:</p>';
+
+  h += '<div class="insight"><div class="ins-title">1. Start in the middle</div>';
+  h += '<p>Range is 0 to 6? Try 3 first.</p></div>';
+
+  h += '<div class="insight amber"><div class="ins-title">2. "Too many" → go left. "Too few" → go right.</div>';
+  h += '<p>Now your range is half the size. Try the middle of the new range.</p></div>';
+
+  h += '<div class="insight teal"><div class="ins-title">3. Repeat until you find it</div>';
+  h += '<p>Each try cuts the range in half. 1000 numbers? Only ~10 tries needed!</p></div>';
+
+  h += '<p>This is exactly what the code does:</p>';
+
+  h += '<div class="code-box">';
+  h += '<div><span class="type">int</span> lo = <span class="num">0</span>, hi = A.length;</div>';
+  h += '<div></div>';
+  h += '<div><span class="kw">while</span> (lo <= hi) {</div>';
+  h += '<div>    <span class="type">int</span> fromA = (lo + hi) / <span class="num">2</span>; <span class="cm">// try the middle</span></div>';
+  h += '<div>    <span class="type">int</span> fromB = half - fromA; <span class="cm">// auto</span></div>';
+  h += '<div></div>';
+  h += '<div>    <span class="cm">// check cross-pairs...</span></div>';
+  h += '<div>    <span class="cm">// if too many → hi = fromA - 1</span></div>';
+  h += '<div>    <span class="cm">// if too few  → lo = fromA + 1</span></div>';
+  h += '<div>}</div>';
+  h += '</div>';
+
+  h += '<p>Exactly what you did with the buttons! Start in middle, check, adjust.</p>';
+
+  h += '<div class="btn-row"><button class="btn primary" onclick="nextLevel()">But what about edge cases? →</button></div>';
+  el.innerHTML = h;
+}
+
+// ========== LEVEL 5: Edge cases ==========
+function renderL5(el) {
+  const A = [100, 200];
+  const B = [1, 2, 3, 4, 5, 6];
+  const total = A.length + B.length;
+  const half = Math.floor((total + 1) / 2);
+
+  let h = '<p>What if the best split means taking <strong>nothing</strong> from blue?</p>';
+  h += '<p>Blue = <strong style="color:var(--blue);">[100, 200]</strong> and Green = <strong style="color:var(--teal);">[1, 2, 3, 4, 5, 6]</strong></p>';
+  h += '<p>Try fromA = 0. Blue gives nobody to the left.</p>';
+
+  h += '<div class="card" id="l5card"></div>';
+  h += '<div class="btn-row"><button class="btn primary" id="l5next" style="display:none;" onclick="nextLevel()">That makes sense →</button></div>';
+
+  el.innerHTML = h;
+
+  function render5(fromA) {
+    const fromB = half - fromA;
+    const leftA = fromA > 0 ? A[fromA-1] : -Infinity;
+    const rightA = fromA < A.length ? A[fromA] : Infinity;
+    const leftB = fromB > 0 ? B[fromB-1] : -Infinity;
+    const rightB = fromB < B.length ? B[fromB] : Infinity;
+    const ok1 = leftA <= rightB;
+    const ok2 = leftB <= rightA;
+    const valid = ok1 && ok2;
+
+    let c = '';
+    c += '<div class="slider-area">';
+    c += '<div class="slider-label">Take <strong>' + fromA + '</strong> from blue</div>';
+    c += '<div class="slider-track">';
+    c += '<span style="font-size:0.8rem;color:var(--text3);">0</span>';
+    c += '<input type="range" min="0" max="' + A.length + '" value="' + fromA + '" id="l5slider">';
+    c += '<span style="font-size:0.8rem;color:var(--text3);">' + A.length + '</span>';
+    c += '</div></div>';
+
+    c += '<div class="row-label a">Blue</div><div class="num-row">';
+    A.forEach((n,i) => {
+      const on = i < fromA;
+      let tag = '';
+      if (i === fromA - 1 && fromA > 0) tag = '<span class="mini-tag a-t">leftA</span>';
+      if (i === fromA && fromA < A.length) tag = '<span class="mini-tag gray-t">rightA</span>';
+      c += '<div class="cell ' + (on ? 'a-on' : 'a-off') + '" style="position:relative;">' + n + tag + '</div>';
+    });
+    c += '</div>';
+
+    c += '<div class="row-label b" style="margin-top:1.5rem;">Green</div><div class="num-row">';
+    B.forEach((n,i) => {
+      const on = i < fromB;
+      let tag = '';
+      if (i === fromB - 1 && fromB > 0) tag = '<span class="mini-tag b-t">leftB</span>';
+      if (i === fromB && fromB < B.length) tag = '<span class="mini-tag gray-t">rightB</span>';
+      c += '<div class="cell ' + (on ? 'b-on' : 'b-off') + '" style="position:relative;">' + n + tag + '</div>';
+    });
+    c += '</div>';
+
+    if (fromA === 0) {
+      c += '<div class="insight amber" style="margin-top:1.5rem;"><div class="ins-title">There\'s no leftA!</div>';
+      c += '<p>Blue gave nobody to the left. So what\'s "blue\'s biggest on the left"? It doesn\'t exist. We use <strong>-∞</strong> (negative infinity) as a placeholder. Since -∞ is smaller than everything, it will <strong>never fail the check</strong>.</p></div>';
+    }
+
+    c += '<div class="checks" style="margin-top:1rem;">';
+    c += '<div class="chk"><div class="chk-icon ' + (ok1?'ok':'no') + '">' + (ok1?'✓':'✗') + '</div>';
+    c += '<span>leftA (' + fmt(leftA) + ') ≤ rightB (' + fmt(rightB) + ')?</span></div>';
+    c += '<div class="chk"><div class="chk-icon ' + (ok2?'ok':'no') + '">' + (ok2?'✓':'✗') + '</div>';
+    c += '<span>leftB (' + fmt(leftB) + ') ≤ rightA (' + fmt(rightA) + ')?</span></div>';
+    c += '</div>';
+
+    if (valid) {
+      const med = total % 2 === 1 ? Math.max(leftA, leftB) : (Math.max(leftA, leftB) + Math.min(rightA, rightB)) / 2;
+      c += '<div class="banner win"><div class="big">Median = ' + med + '</div></div>';
+      var nb = document.getElementById('l5next');
+      if (nb) nb.style.display = '';
+    } else if (!ok1) {
+      c += '<div class="banner lose"><div class="big">Too many from blue</div></div>';
+    } else {
+      c += '<div class="banner hint"><div class="big">Too few from blue</div></div>';
+    }
+
+    document.getElementById('l5card').innerHTML = c;
+    var sl = document.getElementById('l5slider');
+    if (sl) sl.oninput = function() { render5(parseInt(this.value)); };
+  }
+
+  render5(0);
+}
+
+// ========== LEVEL 6: Why swap ==========
+function renderL6(el) {
+  let h = '<p>One question left. What if blue has <strong>1000 numbers</strong> and green has <strong>3</strong>?</p>';
+
+  h += '<div class="counter-row">';
+  h += '<div class="counter"><div class="c-val" style="color:var(--blue);">1000</div><div class="c-label">Blue list</div></div>';
+  h += '<div class="counter"><div class="c-val" style="color:var(--text3);">vs</div><div class="c-label"></div></div>';
+  h += '<div class="counter"><div class="c-val" style="color:var(--teal);">3</div><div class="c-label">Green list</div></div>';
+  h += '</div>';
+
+  h += '<p>If we search blue, that\'s up to 1000 positions. If we search green, it\'s only 4 positions (0, 1, 2, or 3).</p>';
+
+  h += '<div class="insight"><div class="ins-title">Always search the smaller list!</div>';
+  h += '<p>It\'s faster — fewer positions to try.</p></div>';
+
+  h += '<div class="insight amber"><div class="ins-title">And it\'s safer too!</div>';
+  h += '<p>If we search blue and try fromA = 0, then fromB = 502 — but green only has 3 numbers! Crash! Searching the smaller list prevents this.</p></div>';
+
+  h += '<p>In code, it\'s just one line:</p>';
+
+  h += '<div class="code-box">';
+  h += '<div><span class="kw">if</span> (A.length > B.length)</div>';
+  h += '<div>    <span class="kw">return</span> <span class="fn">findMedianSortedArrays</span>(B, A); <span class="cm">// swap!</span></div>';
+  h += '</div>';
+
+  h += '<p>"If A is bigger, just swap them so A is always the small one."</p>';
+
+  h += '<div class="btn-row"><button class="btn primary" onclick="nextLevel()">Show me the full code →</button></div>';
+  el.innerHTML = h;
+}
+
+// ========== LEVEL 7: Full code ==========
+function renderL7(el) {
+  let h = '<p>Every line below is something <strong>you already understand</strong> from playing the game. Hover over the colored comments — they map to what you learned.</p>';
+
+  h += '<div class="code-box" style="font-size:0.78rem;line-height:2;">';
+  h += '<div><span class="kw">public double</span> <span class="fn">findMedianSortedArrays</span>(<span class="type">int</span>[] A, <span class="type">int</span>[] B) {</div>';
+  h += '<div></div>';
+  h += '<div>    <span class="cm">// LEVEL 7: Search the smaller list</span></div>';
+  h += '<div>    <span class="kw">if</span> (A.length > B.length)</div>';
+  h += '<div>        <span class="kw">return</span> <span class="fn">findMedianSortedArrays</span>(B, A);</div>';
+  h += '<div></div>';
+  h += '<div>    <span class="cm">// LEVEL 1: How many go on the left?</span></div>';
+  h += '<div>    <span class="type">int</span> total = A.length + B.length;</div>';
+  h += '<div>    <span class="type">int</span> half = (total + <span class="num">1</span>) / <span class="num">2</span>;</div>';
+  h += '<div></div>';
+  h += '<div>    <span class="cm">// LEVEL 4: Binary search (the guessing game!)</span></div>';
+  h += '<div>    <span class="type">int</span> lo = <span class="num">0</span>, hi = A.length;</div>';
+  h += '<div>    <span class="kw">while</span> (lo <= hi) {</div>';
+  h += '<div>        <span class="type">int</span> fromA = (lo + hi) / <span class="num">2</span>;</div>';
+  h += '<div>        <span class="type">int</span> fromB = half - fromA; <span class="cm">// auto!</span></div>';
+  h += '<div></div>';
+  h += '<div>        <span class="cm">// LEVEL 6: Handle empty sides</span></div>';
+  h += '<div>        <span class="type">int</span> leftA  = fromA > <span class="num">0</span> ? A[fromA-<span class="num">1</span>] : Integer.<span class="num">MIN_VALUE</span>;</div>';
+  h += '<div>        <span class="type">int</span> rightA = fromA < A.length ? A[fromA] : Integer.<span class="num">MAX_VALUE</span>;</div>';
+  h += '<div>        <span class="type">int</span> leftB  = fromB > <span class="num">0</span> ? B[fromB-<span class="num">1</span>] : Integer.<span class="num">MIN_VALUE</span>;</div>';
+  h += '<div>        <span class="type">int</span> rightB = fromB < B.length ? B[fromB] : Integer.<span class="num">MAX_VALUE</span>;</div>';
+  h += '<div></div>';
+  h += '<div>        <span class="cm">// LEVEL 2: The two cross-checks</span></div>';
+  h += '<div>        <span class="kw">if</span> (leftA <= rightB && leftB <= rightA) {</div>';
+  h += '<div>            <span class="kw">if</span> (total % <span class="num">2</span> == <span class="num">1</span>) <span class="kw">return</span> Math.<span class="fn">max</span>(leftA, leftB);</div>';
+  h += '<div>            <span class="kw">return</span> (Math.<span class="fn">max</span>(leftA, leftB)</div>';
+  h += '<div>                  + Math.<span class="fn">min</span>(rightA, rightB)) / <span class="num">2.0</span>;</div>';
+  h += '<div>        }</div>';
+  h += '<div></div>';
+  h += '<div>        <span class="cm">// LEVEL 3: Too many? Go left. Too few? Go right.</span></div>';
+  h += '<div>        <span class="kw">else if</span> (leftA > rightB) hi = fromA - <span class="num">1</span>;</div>';
+  h += '<div>        <span class="kw">else</span>                     lo = fromA + <span class="num">1</span>;</div>';
+  h += '<div>    }</div>';
+  h += '<div>    <span class="kw">return</span> -<span class="num">1</span>;</div>';
+  h += '<div>}</div>';
+  h += '</div>';
+
+  h += '<div class="banner win" style="margin-top:2rem;">';
+  h += '<div class="big">You learned the whole algorithm!</div>';
+  h += '<div class="sub">Not by memorizing code — by playing a game and discovering the rules yourself.</div>';
+  h += '</div>';
+
+  h += '<div class="insight purple" style="margin-top:1.5rem;"><div class="ins-title">The whole algorithm in one sentence</div>';
+  h += '<p>Binary search on where to split the smaller array. The other array\'s split is automatic. Check the two cross-pairs. If wrong, the check tells you which direction. Done.</p></div>';
+
+  el.innerHTML = h;
+}
+
+init();
+</script>
+</body>
+</html>
