@@ -1,0 +1,627 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Longest Common Subsequence — A Visual Game</title>
+<link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800;900&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg:#fafbff;--card:#fff;--blue:#4361ee;--blue-l:#eef1ff;--teal:#0d9488;--teal-l:#e6f7f6;
+  --green:#16a34a;--green-l:#dcfce7;--red:#dc2626;--red-l:#fee2e2;--amber:#d97706;--amber-l:#fef3c7;
+  --purple:#7c3aed;--purple-l:#ede9fe;--orange:#ea580c;--orange-l:#fff7ed;--pink:#db2777;--pink-l:#fce7f3;
+  --text:#1e1e2e;--text2:#555;--text3:#999;--border:#e5e7eb;
+  --shadow:0 4px 24px rgba(0,0,0,0.07);
+}
+*{margin:0;padding:0;box-sizing:border-box;}
+body{background:var(--bg);color:var(--text);font-family:'Nunito',sans-serif;}
+.app{max-width:720px;margin:0 auto;padding:1.5rem 1rem 4rem;}
+
+.progress-bar{display:flex;gap:6px;margin-bottom:2rem;}
+.progress-dot{flex:1;height:6px;border-radius:3px;background:var(--border);transition:all 0.4s;}
+.progress-dot.done{background:var(--purple);}
+.progress-dot.active{background:var(--purple);animation:pulse 1.5s infinite;}
+@keyframes pulse{0%,100%{opacity:1;}50%{opacity:0.5;}}
+
+.level{display:none;animation:fadeUp 0.4s ease;}
+.level.active{display:block;}
+@keyframes fadeUp{from{opacity:0;transform:translateY(15px);}to{opacity:1;transform:translateY(0);}}
+
+.level-badge{display:inline-block;font-size:0.7rem;font-weight:800;letter-spacing:2px;text-transform:uppercase;padding:4px 14px;border-radius:20px;margin-bottom:0.75rem;}
+.level-badge.story{background:var(--purple-l);color:var(--purple);}
+.level-badge.challenge{background:var(--amber-l);color:var(--amber);}
+.level-badge.code{background:var(--teal-l);color:var(--teal);}
+.level-badge.boss{background:var(--red-l);color:var(--red);}
+
+.level h2{font-size:1.6rem;font-weight:800;margin-bottom:0.5rem;}
+.level p{color:var(--text2);margin-bottom:1rem;font-size:0.95rem;line-height:1.7;}
+.level p strong{color:var(--text);}
+
+.card{background:var(--card);border-radius:16px;box-shadow:var(--shadow);padding:1.5rem;margin:1.25rem 0;border:1px solid #eef;}
+
+.insight{border-radius:14px;padding:1.25rem;margin:1.25rem 0;border-left:4px solid var(--purple);background:var(--purple-l);}
+.insight.teal{background:var(--teal-l);border-left-color:var(--teal);}
+.insight.amber{background:var(--amber-l);border-left-color:var(--amber);}
+.insight.green{background:var(--green-l);border-left-color:var(--green);}
+.insight.blue{background:var(--blue-l);border-left-color:var(--blue);}
+.insight.orange{background:var(--orange-l);border-left-color:var(--orange);}
+.insight .ins-title{font-size:0.85rem;font-weight:800;margin-bottom:4px;}
+.insight p{font-size:0.88rem;color:var(--text2);margin-bottom:0;}
+
+.btn{font-family:'Nunito',sans-serif;font-size:0.9rem;font-weight:700;padding:10px 28px;border-radius:12px;border:none;cursor:pointer;transition:all 0.2s;}
+.btn:hover{transform:translateY(-1px);}
+.btn.primary{background:var(--purple);color:#fff;}
+.btn.primary:hover{background:#6525d4;}
+.btn.outline{background:#fff;color:var(--text);border:2px solid var(--border);}
+.btn.outline:hover{border-color:var(--purple);color:var(--purple);}
+.btn.small{font-size:0.8rem;padding:6px 16px;border-radius:8px;}
+.btn:disabled{opacity:0.3;cursor:default;transform:none !important;}
+.btn-row{display:flex;gap:10px;justify-content:center;margin-top:1.5rem;flex-wrap:wrap;}
+
+.connect{text-align:center;color:var(--text3);font-size:1.5rem;margin:0.5rem 0;}
+
+.code-box{background:#1e1e2e;color:#cdd6f4;border-radius:12px;padding:1.25rem 1.5rem;font-family:'JetBrains Mono',monospace;font-size:0.8rem;line-height:1.9;overflow-x:auto;margin:1rem 0;}
+.code-box .kw{color:#cba6f7;} .code-box .fn{color:#89b4fa;} .code-box .num{color:#fab387;}
+.code-box .cm{color:#6c7086;} .code-box .type{color:#f9e2af;} .code-box .str{color:#a6e3a1;}
+
+.banner{border-radius:14px;padding:1.25rem;text-align:center;margin:1rem 0;}
+.banner.win{background:var(--green-l);border:2px solid #a7f3d0;}
+.banner.hint{background:var(--amber-l);border:2px solid #fde68a;}
+.banner .big{font-size:1.4rem;font-weight:800;}
+.banner.win .big{color:var(--green);}
+.banner.hint .big{color:var(--amber);}
+.banner .sub{font-size:0.85rem;color:var(--text2);margin-top:4px;}
+
+/* Word display */
+.word-row{display:flex;gap:0;margin:0.5rem 0;flex-wrap:wrap;align-items:flex-start;}
+.letter{width:46px;height:46px;display:flex;align-items:center;justify-content:center;font-family:'JetBrains Mono',monospace;font-size:1.15rem;font-weight:700;border:2px solid var(--border);background:#fff;transition:all 0.3s;position:relative;cursor:default;}
+.letter:first-child{border-radius:12px 4px 4px 12px;}
+.letter:last-child{border-radius:4px 12px 12px 4px;}
+.letter:only-child{border-radius:12px;}
+.letter.match{background:var(--green-l);color:var(--green);border-color:#86efac;}
+.letter.hl-a{background:var(--purple-l);color:var(--purple);border-color:#c4b5fd;}
+.letter.hl-b{background:var(--teal-l);color:var(--teal);border-color:#99f6e4;}
+.letter.picked{background:var(--purple);color:#fff;border-color:var(--purple);transform:scale(1.08);}
+.letter.clickable{cursor:pointer;}
+.letter.clickable:hover{border-color:var(--purple);background:var(--purple-l);}
+.letter.dim{opacity:0.35;}
+
+.row-label{font-size:0.75rem;font-weight:700;text-transform:uppercase;letter-spacing:1.5px;margin-bottom:6px;margin-top:1rem;}
+.row-label.a{color:var(--purple);}
+.row-label.b{color:var(--teal);}
+
+/* Grid table */
+.grid-wrap{overflow-x:auto;margin:1rem 0;}
+.grid{border-collapse:collapse;}
+.grid td,.grid th{width:44px;height:44px;text-align:center;font-family:'JetBrains Mono',monospace;font-size:0.85rem;font-weight:600;border:1.5px solid var(--border);}
+.grid th{background:var(--bg);color:var(--text3);font-size:0.8rem;font-weight:700;}
+.grid th.lbl-a{color:var(--purple);}
+.grid th.lbl-b{color:var(--teal);}
+.grid td{background:#fff;color:var(--text);transition:all 0.3s;}
+.grid td.active{background:var(--purple);color:#fff;border-color:var(--purple);font-weight:800;}
+.grid td.path{background:var(--green-l);color:var(--green);border-color:#86efac;font-weight:800;}
+.grid td.comparing{background:var(--amber-l);color:var(--amber);border-color:#fde68a;}
+.grid td.filled{background:#f5f3ff;}
+.grid td.arrow-diag::after{content:'↖';position:absolute;font-size:0.55rem;top:2px;left:3px;color:var(--green);}
+.grid td.arrow-up::after{content:'↑';position:absolute;font-size:0.55rem;top:2px;left:3px;color:var(--text3);}
+.grid td.arrow-left::after{content:'←';position:absolute;font-size:0.55rem;top:2px;left:3px;color:var(--text3);}
+.grid td{position:relative;}
+
+/* Subsequence picker */
+.picked-display{display:flex;gap:4px;min-height:46px;align-items:center;margin:0.5rem 0;flex-wrap:wrap;}
+.picked-char{width:40px;height:40px;display:flex;align-items:center;justify-content:center;font-family:'JetBrains Mono',monospace;font-size:1.05rem;font-weight:700;background:var(--purple);color:#fff;border-radius:10px;animation:popIn 0.2s ease;}
+@keyframes popIn{from{transform:scale(0.5);opacity:0;}to{transform:scale(1);opacity:1;}}
+
+.demo-controls{display:flex;align-items:center;justify-content:space-between;margin-bottom:1rem;}
+.demo-controls .step-label{font-size:0.9rem;font-weight:700;color:var(--text2);}
+.demo-controls .btns{display:flex;gap:8px;}
+
+@media(max-width:500px){
+  .letter{width:38px;height:38px;font-size:0.95rem;}
+  .grid td,.grid th{width:36px;height:36px;font-size:0.75rem;}
+  .level h2{font-size:1.3rem;}
+}
+</style>
+</head>
+<body>
+
+<div class="app">
+  <div class="progress-bar" id="progBar"></div>
+  <div id="levels"></div>
+</div>
+
+<script>
+const LEVELS = [
+  {badge:'story',badgeText:'Level 1',title:'What\'s a subsequence?',render:renderL0},
+  {badge:'challenge',badgeText:'Level 2',title:'Find the common letters!',render:renderL1},
+  {badge:'story',badgeText:'Level 3',title:'Why is this hard?',render:renderL2},
+  {badge:'challenge',badgeText:'Level 4',title:'Think smaller first',render:renderL3},
+  {badge:'story',badgeText:'Level 5',title:'You just discovered the trick!',render:renderL4},
+  {badge:'challenge',badgeText:'Level 6',title:'Fill the grid yourself',render:renderL5},
+  {badge:'code',badgeText:'Level 7',title:'From grid to code',render:renderL6},
+  {badge:'boss',badgeText:'Final Level',title:'You know the whole algorithm!',render:renderL7},
+];
+
+let currentLevel = 0;
+
+function init(){renderProgress();renderLevel();}
+
+function renderProgress(){
+  const bar=document.getElementById('progBar');bar.innerHTML='';
+  for(let i=0;i<LEVELS.length;i++){
+    const d=document.createElement('div');
+    d.className='progress-dot'+(i<currentLevel?' done':'')+(i===currentLevel?' active':'');
+    bar.appendChild(d);
+  }
+}
+
+function renderLevel(){
+  const c=document.getElementById('levels');c.innerHTML='';
+  const div=document.createElement('div');div.className='level active';
+  const L=LEVELS[currentLevel];
+  div.innerHTML='<span class="level-badge '+L.badge+'">'+L.badgeText+'</span><h2>'+L.title+'</h2>';
+  const content=document.createElement('div');
+  div.appendChild(content);
+  c.appendChild(div);
+  L.render(content);
+  renderProgress();
+  window.scrollTo({top:0,behavior:'smooth'});
+}
+
+function nextLevel(){if(currentLevel<LEVELS.length-1){currentLevel++;renderLevel();}}
+
+// ========== LEVEL 0: What is a subsequence ==========
+function renderL0(el){
+  let h='<p>Before we find the <strong>Longest Common Subsequence</strong>, let\'s understand what a subsequence even is.</p>';
+
+  h+='<p>Take the word <strong style="color:var(--purple);">ABCDE</strong>. A <strong>subsequence</strong> is any letters you pick <strong>without changing their order</strong>. You can skip letters, but you can\'t rearrange them.</p>';
+
+  h+='<div class="card">';
+  h+='<div style="font-size:0.8rem;font-weight:700;color:var(--green);text-transform:uppercase;letter-spacing:1px;margin-bottom:8px;">Valid subsequences of ABCDE</div>';
+  h+='<div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:1rem;">';
+  ['ACE','BD','A','ABCDE','BE','ADE'].forEach(s=>{
+    h+='<span style="font-family:JetBrains Mono,monospace;font-weight:700;padding:6px 14px;background:var(--green-l);color:var(--green);border-radius:8px;font-size:0.85rem;">'+s+'</span>';
+  });
+  h+='</div>';
+
+  h+='<div style="font-size:0.8rem;font-weight:700;color:var(--red);text-transform:uppercase;letter-spacing:1px;margin-bottom:8px;">NOT valid</div>';
+  h+='<div style="display:flex;gap:8px;flex-wrap:wrap;">';
+  [['BA','(wrong order)'],['CAB','(rearranged)']].forEach(([s,r])=>{
+    h+='<span style="font-family:JetBrains Mono,monospace;font-weight:700;padding:6px 14px;background:var(--red-l);color:var(--red);border-radius:8px;font-size:0.85rem;">'+s+' <span style="font-weight:400;font-size:0.75rem;">'+r+'</span></span>';
+  });
+  h+='</div></div>';
+
+  h+='<div class="insight"><div class="ins-title">The key rule</div>';
+  h+='<p>You pick letters from left to right. You can <strong>skip</strong> any letters, but you can never go <strong>backwards</strong>.</p></div>';
+
+  h+='<div class="btn-row"><button class="btn primary" onclick="nextLevel()">Got it! →</button></div>';
+  el.innerHTML=h;
+}
+
+// ========== LEVEL 1: Find common letters ==========
+function renderL1(el){
+  const A='ABCBDAB';
+  const B='BDCABA';
+
+  let h='<p>Now we have <strong>two</strong> words. Find the <strong>longest subsequence that appears in BOTH</strong>.</p>';
+  h+='<p>Click letters in the <strong style="color:var(--purple);">purple</strong> word to pick them. The game checks if your pick is also a valid subsequence of the <strong style="color:var(--teal);">green</strong> word.</p>';
+
+  h+='<div class="card" id="l1card"></div>';
+  h+='<div class="btn-row"><button class="btn primary" id="l1next" style="display:none;" onclick="nextLevel()">Why is this hard to do fast? →</button></div>';
+  el.innerHTML=h;
+
+  let picked=[];
+  let bestFound=0;
+
+  function render1(){
+    let c='';
+    c+='<div class="row-label a">Word 1: pick letters (in order)</div><div class="word-row">';
+    let lastPickedIdx=-1;
+    for(let i=0;i<A.length;i++){
+      const isPicked=picked.includes(i);
+      const canPick=!isPicked&&i>(picked.length>0?picked[picked.length-1]:-1);
+      let cls='letter';
+      if(isPicked) cls+=' picked';
+      else if(canPick) cls+=' clickable';
+      else if(picked.length>0&&!isPicked) cls+=' dim';
+      c+='<div class="'+cls+'" '+(canPick?'onclick="pickL1('+i+')"':'')+'>'+A[i]+'</div>';
+    }
+    c+='</div>';
+
+    c+='<div class="row-label b">Word 2: auto-checked</div><div class="word-row">';
+    const pickedChars=picked.map(i=>A[i]);
+    const matchIndices=findSubseqIndices(pickedChars,B);
+    for(let i=0;i<B.length;i++){
+      let cls='letter';
+      if(matchIndices&&matchIndices.includes(i)) cls+=' match';
+      c+='<div class="'+cls+'">'+B[i]+'</div>';
+    }
+    c+='</div>';
+
+    c+='<div style="margin-top:1.25rem;">';
+    c+='<div style="font-size:0.8rem;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:1px;margin-bottom:6px;">Your subsequence</div>';
+    c+='<div class="picked-display">';
+    if(pickedChars.length===0) c+='<span style="font-size:0.85rem;color:var(--text3);">Click letters above...</span>';
+    else pickedChars.forEach(ch=>{c+='<div class="picked-char">'+ch+'</div>';});
+    c+='</div>';
+    c+='<div style="font-size:0.85rem;color:var(--text2);margin-top:4px;">Length: <strong style="color:var(--purple);">'+pickedChars.length+'</strong>';
+    if(matchIndices) c+=' — <span style="color:var(--green);font-weight:700;">Valid in both words!</span>';
+    else if(pickedChars.length>0) c+=' — <span style="color:var(--red);font-weight:700;">Not found in word 2</span>';
+    c+='</div></div>';
+
+    if(matchIndices&&pickedChars.length>bestFound) bestFound=pickedChars.length;
+
+    c+='<div style="display:flex;gap:8px;margin-top:1rem;">';
+    c+='<button class="btn small outline" onclick="resetL1()">Reset</button>';
+    c+='<button class="btn small outline" onclick="undoL1()">Undo</button>';
+    c+='</div>';
+
+    if(bestFound>=4){
+      c+='<div class="banner win" style="margin-top:1rem;"><div class="big">Nice! You found length '+bestFound+'</div>';
+      c+='<div class="sub">The actual longest is 4: BCBA or BCAB or BDAB. Can you find all of them?</div></div>';
+      var nb=document.getElementById('l1next');if(nb)nb.style.display='';
+    }
+
+    document.getElementById('l1card').innerHTML=c;
+  }
+
+  function findSubseqIndices(chars,word){
+    if(chars.length===0) return [];
+    let indices=[];let j=0;
+    for(let i=0;i<word.length&&j<chars.length;i++){
+      if(word[i]===chars[j]){indices.push(i);j++;}
+    }
+    return j===chars.length?indices:null;
+  }
+
+  window.pickL1=function(i){picked.push(i);render1();};
+  window.resetL1=function(){picked=[];render1();};
+  window.undoL1=function(){picked.pop();render1();};
+
+  render1();
+}
+
+// ========== LEVEL 2: Why is this hard ==========
+function renderL2(el){
+  let h='<p>You just tried to find the LCS by hand. It took some thinking, right? Here\'s why a computer struggles too:</p>';
+
+  h+='<div class="insight amber"><div class="ins-title">The brute force problem</div>';
+  h+='<p>A word with 7 letters has <strong>128 possible subsequences</strong> (2⁷). A word with 20 letters? Over <strong>a million</strong>. Checking every subsequence of one word against the other is way too slow.</p></div>';
+
+  h+='<p>We need a smarter approach. Let\'s think about it differently...</p>';
+
+  h+='<div class="insight green"><div class="ins-title">What if we think one letter at a time?</div>';
+  h+='<p>Instead of looking at the whole word, what if we compare them <strong>letter by letter</strong> and build up the answer gradually?</p></div>';
+
+  h+='<p>Let\'s try something. Take two smaller words first:</p>';
+
+  h+='<div style="display:flex;gap:2rem;justify-content:center;flex-wrap:wrap;margin:1rem 0;">';
+  h+='<div style="text-align:center;"><div style="font-size:0.75rem;font-weight:700;color:var(--purple);text-transform:uppercase;letter-spacing:1px;">Word 1</div>';
+  h+='<div style="font-family:JetBrains Mono,monospace;font-size:1.8rem;font-weight:800;color:var(--purple);">AB</div></div>';
+  h+='<div style="text-align:center;"><div style="font-size:0.75rem;font-weight:700;color:var(--teal);text-transform:uppercase;letter-spacing:1px;">Word 2</div>';
+  h+='<div style="font-family:JetBrains Mono,monospace;font-size:1.8rem;font-weight:800;color:var(--teal);">BA</div></div>';
+  h+='</div>';
+
+  h+='<p>When you compare the last letters of each word, <strong>there are only two possibilities:</strong></p>';
+
+  h+='<div class="insight"><div class="ins-title">Case 1: Last letters MATCH</div>';
+  h+='<p>Great! That letter is part of the LCS. Add it, then solve the <strong>shorter</strong> problem (both words without their last letter).</p></div>';
+
+  h+='<div class="insight orange"><div class="ins-title">Case 2: Last letters DON\'T match</div>';
+  h+='<p>One of them isn\'t useful. Try <strong>two options</strong>: remove the last letter of word 1, OR remove the last letter of word 2. Take whichever gives a longer result.</p></div>';
+
+  h+='<p>That\'s it! Just two cases. Let\'s see this in action.</p>';
+
+  h+='<div class="btn-row"><button class="btn primary" onclick="nextLevel()">Show me →</button></div>';
+  el.innerHTML=h;
+}
+
+// ========== LEVEL 3: Think smaller ==========
+function renderL3(el){
+  const A='BD';
+  const B='BA';
+
+  let h='<p>Let\'s trace through the two cases with tiny words: <strong style="color:var(--purple);">BD</strong> and <strong style="color:var(--teal);">BA</strong>.</p>';
+  h+='<p>We compare them step by step, starting from the end.</p>';
+
+  h+='<div class="card" id="l3card"></div>';
+  h+='<div class="btn-row"><button class="btn primary" id="l3next" style="display:none;" onclick="nextLevel()">I see the pattern →</button></div>';
+  el.innerHTML=h;
+
+  const steps=[
+    {
+      a:'BD',b:'BA',
+      title:'Compare last letters: D vs A',
+      desc:'They don\'t match! So we try two paths: remove D (try "B" vs "BA") or remove A (try "BD" vs "B"). We\'ll take whichever gives a longer answer.',
+      type:'mismatch'
+    },
+    {
+      a:'B',b:'BA',
+      title:'Path 1: Compare "B" vs "BA" — last letters: B vs A',
+      desc:'B ≠ A. Don\'t match again. Try two paths: remove B from word 1 (try "" vs "BA") or remove A from word 2 (try "B" vs "B").',
+      type:'mismatch'
+    },
+    {
+      a:'B',b:'B',
+      title:'Path 1 → right: Compare "B" vs "B" — last letters: B vs B',
+      desc:'They MATCH! B is part of the LCS. Remove B from both and solve "" vs "". That\'s empty — LCS length is 0. So this path gives us 0 + 1 = 1.',
+      type:'match',
+      result:1
+    },
+    {
+      a:'BD',b:'B',
+      title:'Path 2: Compare "BD" vs "B" — last letters: D vs B',
+      desc:'D ≠ B. Try two paths: remove D (try "B" vs "B") or remove B (try "BD" vs ""). We already know "B" vs "B" = 1, and anything vs "" = 0.',
+      type:'mismatch',
+      result:1
+    },
+    {
+      a:'BD',b:'BA',
+      title:'Back to the original: "BD" vs "BA"',
+      desc:'Path 1 (remove D) gave us 1. Path 2 (remove A) also gave us 1. max(1, 1) = 1. The LCS of "BD" and "BA" is 1 — the letter "B"!',
+      type:'final',
+      result:1
+    }
+  ];
+
+  let cur=0;
+
+  function render3(){
+    const s=steps[cur];
+    let c='';
+
+    c+='<div class="demo-controls"><span class="step-label">Step '+(cur+1)+' / '+steps.length+'</span>';
+    c+='<div class="btns">';
+    c+='<button class="btn small outline" id="l3prev" '+(cur===0?'disabled':'')+'>← Back</button>';
+    c+='<button class="btn small primary" id="l3fwd" '+(cur===steps.length-1?'disabled':'')+'>Next →</button>';
+    c+='</div></div>';
+
+    c+='<div style="font-size:1rem;font-weight:700;margin-bottom:0.5rem;">'+s.title+'</div>';
+
+    if(s.a!==undefined){
+      c+='<div style="display:flex;gap:2rem;margin:1rem 0;flex-wrap:wrap;">';
+      c+='<div><div class="row-label a">Word 1</div><div class="word-row">';
+      for(let i=0;i<s.a.length;i++){
+        const isLast=i===s.a.length-1;
+        c+='<div class="letter'+(isLast?(s.type==='match'?' match':' hl-a'):'')+'" style="'+(isLast?'font-size:1.3rem;':'')+'">'+s.a[i]+'</div>';
+      }
+      if(s.a.length===0) c+='<span style="font-size:0.9rem;color:var(--text3);font-style:italic;">empty</span>';
+      c+='</div></div>';
+
+      c+='<div><div class="row-label b">Word 2</div><div class="word-row">';
+      for(let i=0;i<s.b.length;i++){
+        const isLast=i===s.b.length-1;
+        c+='<div class="letter'+(isLast?(s.type==='match'?' match':' hl-b'):'')+'" style="'+(isLast?'font-size:1.3rem;':'')+'">'+s.b[i]+'</div>';
+      }
+      if(s.b.length===0) c+='<span style="font-size:0.9rem;color:var(--text3);font-style:italic;">empty</span>';
+      c+='</div></div>';
+      c+='</div>';
+    }
+
+    c+='<p style="margin-top:0.5rem;">'+s.desc+'</p>';
+
+    if(s.result!==undefined){
+      c+='<div class="banner win" style="margin-top:1rem;"><div class="big">LCS length = '+s.result+'</div></div>';
+    }
+
+    if(cur===steps.length-1){
+      var nb=document.getElementById('l3next');if(nb)nb.style.display='';
+    }
+
+    document.getElementById('l3card').innerHTML=c;
+    var p=document.getElementById('l3prev');if(p)p.onclick=function(){if(cur>0){cur--;render3();}};
+    var f=document.getElementById('l3fwd');if(f)f.onclick=function(){if(cur<steps.length-1){cur++;render3();}};
+  }
+
+  render3();
+}
+
+// ========== LEVEL 4: The pattern ==========
+function renderL4(el){
+  let h='<p>You just traced through the algorithm! Let\'s name what you discovered:</p>';
+
+  h+='<div class="insight green"><div class="ins-title">The two-case rule</div>';
+  h+='<p>Comparing word1[i] and word2[j]:</p></div>';
+
+  h+='<div class="card" style="border-left:4px solid var(--green);">';
+  h+='<div style="font-weight:700;margin-bottom:0.75rem;font-size:1rem;">If the letters MATCH:</div>';
+  h+='<p style="font-size:0.9rem;color:var(--text2);">LCS(i, j) = <strong style="color:var(--green);">1 + LCS(i-1, j-1)</strong></p>';
+  h+='<p style="font-size:0.85rem;color:var(--text3);">"This letter is in the answer. Now solve the rest (both words one shorter)."</p>';
+  h+='</div>';
+
+  h+='<div class="card" style="border-left:4px solid var(--amber);">';
+  h+='<div style="font-weight:700;margin-bottom:0.75rem;font-size:1rem;">If the letters DON\'T match:</div>';
+  h+='<p style="font-size:0.9rem;color:var(--text2);">LCS(i, j) = <strong style="color:var(--amber);">max(LCS(i-1, j), LCS(i, j-1))</strong></p>';
+  h+='<p style="font-size:0.85rem;color:var(--text3);">"Try dropping each letter. Keep the better result."</p>';
+  h+='</div>';
+
+  h+='<div class="card" style="border-left:4px solid var(--text3);">';
+  h+='<div style="font-weight:700;margin-bottom:0.75rem;font-size:1rem;">If either word is empty:</div>';
+  h+='<p style="font-size:0.9rem;color:var(--text2);">LCS = <strong>0</strong></p>';
+  h+='<p style="font-size:0.85rem;color:var(--text3);">"Nothing in common with an empty word."</p>';
+  h+='</div>';
+
+  h+='<div class="insight amber"><div class="ins-title">But wait — this is slow too!</div>';
+  h+='<p>The same subproblems get solved over and over. LCS("B","B") might get calculated 5 times! What if we <strong>saved each answer in a grid</strong> so we never recompute?</p></div>';
+
+  h+='<p>That\'s called <strong>dynamic programming</strong> — and the grid is the heart of this algorithm.</p>';
+
+  h+='<div class="btn-row"><button class="btn primary" onclick="nextLevel()">Let me fill the grid →</button></div>';
+  el.innerHTML=h;
+}
+
+// ========== LEVEL 5: Fill the grid ==========
+function renderL5(el){
+  const A='ACE';
+  const B='ABE';
+  const m=A.length,n=B.length;
+
+  let h='<p>Word 1 = <strong style="color:var(--purple);">ACE</strong>, Word 2 = <strong style="color:var(--teal);">ABE</strong></p>';
+  h+='<p>Each cell (i, j) stores the LCS length of <strong>the first i letters of word 1</strong> and <strong>the first j letters of word 2</strong>.</p>';
+  h+='<p>The top row and left column are all 0 (comparing with empty = 0). <strong>Fill in the rest!</strong></p>';
+
+  h+='<div class="card" id="l5card"></div>';
+  h+='<div class="btn-row"><button class="btn primary" id="l5next" style="display:none;" onclick="nextLevel()">Now show me the code →</button></div>';
+  el.innerHTML=h;
+
+  const dp=Array.from({length:m+1},()=>Array(n+1).fill(0));
+  for(let i=1;i<=m;i++) for(let j=1;j<=n;j++){
+    if(A[i-1]===B[j-1]) dp[i][j]=dp[i-1][j-1]+1;
+    else dp[i][j]=Math.max(dp[i-1][j],dp[i][j-1]);
+  }
+
+  const userGrid=Array.from({length:m+1},()=>Array(n+1).fill(null));
+  for(let j=0;j<=n;j++) userGrid[0][j]=0;
+  for(let i=0;i<=m;i++) userGrid[i][0]=0;
+
+  let activeI=1,activeJ=1;
+
+  function findNext(){
+    for(let i=1;i<=m;i++) for(let j=1;j<=n;j++){
+      if(userGrid[i][j]===null) return [i,j];
+    }
+    return null;
+  }
+
+  function render5(){
+    let c='';
+    const next=findNext();
+    if(next){activeI=next[0];activeJ=next[1];}
+
+    const lettersMatch=next&&A[activeI-1]===B[activeJ-1];
+    if(next){
+      c+='<div style="margin-bottom:1rem;font-size:0.9rem;color:var(--text2);">';
+      c+='Cell ('+activeI+','+activeJ+'): comparing <strong style="color:var(--purple);">'+A[activeI-1]+'</strong> vs <strong style="color:var(--teal);">'+B[activeJ-1]+'</strong> — ';
+      if(lettersMatch) c+='<span style="color:var(--green);font-weight:700;">They match!</span> = diagonal + 1';
+      else c+='<span style="color:var(--amber);font-weight:700;">Different!</span> = max(up, left)';
+      c+='</div>';
+    }
+
+    c+='<div class="grid-wrap"><table class="grid"><tr><th></th><th>""</th>';
+    for(let j=0;j<n;j++) c+='<th class="lbl-b">'+B[j]+'</th>';
+    c+='</tr>';
+
+    for(let i=0;i<=m;i++){
+      c+='<tr>';
+      c+='<th class="lbl-a">'+(i===0?'""':A[i-1])+'</th>';
+      for(let j=0;j<=n;j++){
+        let cls='';
+        const val=userGrid[i][j];
+        if(next&&i===activeI&&j===activeJ) cls='comparing';
+        else if(val!==null) cls='filled';
+        c+='<td class="'+cls+'">'+(val!==null?val:'')+'</td>';
+      }
+      c+='</tr>';
+    }
+    c+='</table></div>';
+
+    if(next){
+      const correct=dp[activeI][activeJ];
+      c+='<div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:1rem;justify-content:center;">';
+      for(let v=0;v<=Math.min(m,n)+1;v++){
+        c+='<button class="btn small '+(v===correct?'':'outline')+'" style="min-width:44px;" onclick="guessL5('+v+','+correct+')">'+v+'</button>';
+      }
+      c+='</div>';
+    } else {
+      c+='<div class="banner win" style="margin-top:1rem;"><div class="big">LCS = '+dp[m][n]+'</div>';
+      c+='<div class="sub">The bottom-right cell has the answer! ACE and ABE share "AE" (length 2).</div></div>';
+      var nb=document.getElementById('l5next');if(nb)nb.style.display='';
+    }
+
+    document.getElementById('l5card').innerHTML=c;
+  }
+
+  window.guessL5=function(v,correct){
+    if(v===correct){
+      userGrid[activeI][activeJ]=v;
+      render5();
+    } else {
+      const card=document.getElementById('l5card');
+      const btns=card.querySelectorAll('.btn');
+      btns.forEach(b=>{if(parseInt(b.textContent)===v){b.style.background='var(--red-l)';b.style.color='var(--red)';setTimeout(()=>{b.style.background='';b.style.color='';},600);}});
+    }
+  };
+
+  render5();
+}
+
+// ========== LEVEL 6: Code ==========
+function renderL6(el){
+  let h='<p>The grid you just filled <strong>IS the algorithm</strong>. Every cell followed the same rule. Let\'s turn it into code:</p>';
+
+  h+='<div class="insight green"><div class="ins-title">The rule you used for each cell</div>';
+  h+='<p>If letters match → take diagonal + 1. If not → take max of up and left.</p></div>';
+
+  h+='<div class="connect">↓</div>';
+
+  h+='<div class="code-box">';
+  h+='<div><span class="kw">for</span> (<span class="type">int</span> i = <span class="num">1</span>; i <= m; i++) {</div>';
+  h+='<div>    <span class="kw">for</span> (<span class="type">int</span> j = <span class="num">1</span>; j <= n; j++) {</div>';
+  h+='<div></div>';
+  h+='<div>        <span class="kw">if</span> (text1[i-<span class="num">1</span>] == text2[j-<span class="num">1</span>]) <span class="cm">// letters match?</span></div>';
+  h+='<div>            dp[i][j] = dp[i-<span class="num">1</span>][j-<span class="num">1</span>] + <span class="num">1</span>;  <span class="cm">// diagonal + 1</span></div>';
+  h+='<div>        <span class="kw">else</span>                           <span class="cm">// don\'t match</span></div>';
+  h+='<div>            dp[i][j] = Math.<span class="fn">max</span>(dp[i-<span class="num">1</span>][j],  <span class="cm">// up</span></div>';
+  h+='<div>                                dp[i][j-<span class="num">1</span>]); <span class="cm">// left</span></div>';
+  h+='<div>    }</div>';
+  h+='<div>}</div>';
+  h+='</div>';
+
+  h+='<p>That\'s the same thing you did by hand! For each cell: check if letters match, then either go diagonal+1 or take the max of up and left.</p>';
+
+  h+='<div class="insight amber"><div class="ins-title">Why i-1 in text1[i-1]?</div>';
+  h+='<p>The grid has an extra row and column for the empty string (row 0 and column 0). So grid row 1 corresponds to the 1st letter, which is index 0 in the string. That\'s why we use <strong>i-1</strong>.</p></div>';
+
+  h+='<div class="btn-row"><button class="btn primary" onclick="nextLevel()">Show me everything →</button></div>';
+  el.innerHTML=h;
+}
+
+// ========== LEVEL 7: Full code ==========
+function renderL7(el){
+  let h='<p>Every line maps to something you already learned by playing:</p>';
+
+  h+='<div class="code-box" style="font-size:0.78rem;line-height:2;">';
+  h+='<div><span class="kw">public int</span> <span class="fn">longestCommonSubsequence</span>(<span class="type">String</span> text1, <span class="type">String</span> text2) {</div>';
+  h+='<div>    <span class="type">int</span> m = text1.<span class="fn">length</span>(), n = text2.<span class="fn">length</span>();</div>';
+  h+='<div></div>';
+  h+='<div>    <span class="cm">// LEVEL 5: Create the grid (extra row/col for empty string)</span></div>';
+  h+='<div>    <span class="type">int</span>[][] dp = <span class="kw">new int</span>[m + <span class="num">1</span>][n + <span class="num">1</span>];</div>';
+  h+='<div>    <span class="cm">// Row 0 and Col 0 are already 0 (empty vs anything = 0)</span></div>';
+  h+='<div></div>';
+  h+='<div>    <span class="cm">// LEVEL 5: Fill it cell by cell, left to right, top to bottom</span></div>';
+  h+='<div>    <span class="kw">for</span> (<span class="type">int</span> i = <span class="num">1</span>; i <= m; i++) {</div>';
+  h+='<div>        <span class="kw">for</span> (<span class="type">int</span> j = <span class="num">1</span>; j <= n; j++) {</div>';
+  h+='<div></div>';
+  h+='<div>            <span class="cm">// LEVEL 3: The two-case rule you discovered</span></div>';
+  h+='<div>            <span class="kw">if</span> (text1.<span class="fn">charAt</span>(i-<span class="num">1</span>) == text2.<span class="fn">charAt</span>(j-<span class="num">1</span>)) {</div>';
+  h+='<div>                <span class="cm">// Match! Diagonal + 1</span></div>';
+  h+='<div>                dp[i][j] = dp[i-<span class="num">1</span>][j-<span class="num">1</span>] + <span class="num">1</span>;</div>';
+  h+='<div>            } <span class="kw">else</span> {</div>';
+  h+='<div>                <span class="cm">// No match. Best of: skip from word1 OR skip from word2</span></div>';
+  h+='<div>                dp[i][j] = Math.<span class="fn">max</span>(dp[i-<span class="num">1</span>][j], dp[i][j-<span class="num">1</span>]);</div>';
+  h+='<div>            }</div>';
+  h+='<div>        }</div>';
+  h+='<div>    }</div>';
+  h+='<div></div>';
+  h+='<div>    <span class="cm">// LEVEL 5: Answer is in the bottom-right corner</span></div>';
+  h+='<div>    <span class="kw">return</span> dp[m][n];</div>';
+  h+='<div>}</div>';
+  h+='</div>';
+
+  h+='<div class="banner win" style="margin-top:2rem;"><div class="big">You learned LCS!</div>';
+  h+='<div class="sub">Not by memorizing — by picking letters, comparing, and filling a grid yourself.</div></div>';
+
+  h+='<div class="insight" style="margin-top:1.5rem;"><div class="ins-title">The whole algorithm in one sentence</div>';
+  h+='<p>Build a grid. Each cell: if the letters match, take the diagonal value + 1. If not, take the max of the cell above and the cell to the left. The bottom-right cell is your answer.</p></div>';
+
+  h+='<div class="insight teal" style="margin-top:1rem;"><div class="ins-title">Complexity</div>';
+  h+='<p><strong>Time:</strong> O(m × n) — you fill every cell once.<br/>';
+  h+='<strong>Space:</strong> O(m × n) for the grid. Can be optimized to O(min(m,n)) since each row only needs the previous row.</p></div>';
+
+  el.innerHTML=h;
+}
+
+init();
+</script>
+</body>
+</html>
