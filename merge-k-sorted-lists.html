@@ -1,0 +1,657 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Merge K Sorted Lists — A Visual Game</title>
+<link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800;900&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg:#fafbff;--card:#fff;--blue:#4361ee;--blue-l:#eef1ff;--teal:#0d9488;--teal-l:#e6f7f6;
+  --green:#16a34a;--green-l:#dcfce7;--red:#dc2626;--red-l:#fee2e2;--amber:#d97706;--amber-l:#fef3c7;
+  --purple:#7c3aed;--purple-l:#ede9fe;--orange:#ea580c;--orange-l:#fff7ed;--pink:#db2777;--pink-l:#fce7f3;
+  --text:#1e1e2e;--text2:#555;--text3:#999;--border:#e5e7eb;
+  --shadow:0 4px 24px rgba(0,0,0,0.07);
+}
+*{margin:0;padding:0;box-sizing:border-box;}
+body{background:var(--bg);color:var(--text);font-family:'Nunito',sans-serif;}
+.app{max-width:740px;margin:0 auto;padding:1.5rem 1rem 4rem;}
+
+.progress-bar{display:flex;gap:6px;margin-bottom:2rem;}
+.progress-dot{flex:1;height:6px;border-radius:3px;background:var(--border);transition:all 0.4s;}
+.progress-dot.done{background:var(--orange);}
+.progress-dot.active{background:var(--orange);animation:pulse 1.5s infinite;}
+@keyframes pulse{0%,100%{opacity:1;}50%{opacity:0.5;}}
+
+.level{display:none;animation:fadeUp 0.4s ease;}
+.level.active{display:block;}
+@keyframes fadeUp{from{opacity:0;transform:translateY(15px);}to{opacity:1;transform:translateY(0);}}
+
+.level-badge{display:inline-block;font-size:0.7rem;font-weight:800;letter-spacing:2px;text-transform:uppercase;padding:4px 14px;border-radius:20px;margin-bottom:0.75rem;}
+.level-badge.story{background:var(--purple-l);color:var(--purple);}
+.level-badge.challenge{background:var(--amber-l);color:var(--amber);}
+.level-badge.code{background:var(--teal-l);color:var(--teal);}
+.level-badge.boss{background:var(--red-l);color:var(--red);}
+
+.level h2{font-size:1.55rem;font-weight:800;margin-bottom:0.5rem;}
+.level p{color:var(--text2);margin-bottom:1rem;font-size:0.95rem;line-height:1.7;}
+.level p strong{color:var(--text);}
+
+.card{background:var(--card);border-radius:16px;box-shadow:var(--shadow);padding:1.5rem;margin:1.25rem 0;border:1px solid #eef;}
+
+.insight{border-radius:14px;padding:1.25rem;margin:1.25rem 0;border-left:4px solid var(--purple);background:var(--purple-l);}
+.insight.teal{background:var(--teal-l);border-left-color:var(--teal);}
+.insight.amber{background:var(--amber-l);border-left-color:var(--amber);}
+.insight.green{background:var(--green-l);border-left-color:var(--green);}
+.insight.blue{background:var(--blue-l);border-left-color:var(--blue);}
+.insight.orange{background:var(--orange-l);border-left-color:var(--orange);}
+.insight .ins-title{font-size:0.85rem;font-weight:800;margin-bottom:4px;}
+.insight p{font-size:0.88rem;color:var(--text2);margin-bottom:0;}
+
+.btn{font-family:'Nunito',sans-serif;font-size:0.9rem;font-weight:700;padding:10px 28px;border-radius:12px;border:none;cursor:pointer;transition:all 0.2s;}
+.btn:hover{transform:translateY(-1px);}
+.btn.primary{background:var(--orange);color:#fff;}
+.btn.primary:hover{background:#c2410c;}
+.btn.outline{background:#fff;color:var(--text);border:2px solid var(--border);}
+.btn.outline:hover{border-color:var(--orange);color:var(--orange);}
+.btn.small{font-size:0.8rem;padding:6px 16px;border-radius:8px;}
+.btn:disabled{opacity:0.3;cursor:default;transform:none!important;}
+.btn-row{display:flex;gap:10px;justify-content:center;margin-top:1.5rem;flex-wrap:wrap;}
+
+.connect{text-align:center;color:var(--text3);font-size:1.5rem;margin:0.5rem 0;}
+
+.code-box{background:#1e1e2e;color:#cdd6f4;border-radius:12px;padding:1.25rem 1.5rem;font-family:'JetBrains Mono',monospace;font-size:0.8rem;line-height:1.9;overflow-x:auto;margin:1rem 0;}
+.code-box .kw{color:#cba6f7;}.code-box .fn{color:#89b4fa;}.code-box .num{color:#fab387;}
+.code-box .cm{color:#6c7086;}.code-box .type{color:#f9e2af;}.code-box .str{color:#a6e3a1;}
+
+.banner{border-radius:14px;padding:1.25rem;text-align:center;margin:1rem 0;}
+.banner.win{background:var(--green-l);border:2px solid #a7f3d0;}
+.banner.hint{background:var(--amber-l);border:2px solid #fde68a;}
+.banner.err{background:var(--red-l);border:2px solid #fca5a5;}
+.banner .big{font-size:1.3rem;font-weight:800;}
+.banner.win .big{color:var(--green);}
+.banner.hint .big{color:var(--amber);}
+.banner.err .big{color:var(--red);}
+.banner .sub{font-size:0.85rem;color:var(--text2);margin-top:4px;}
+
+.demo-controls{display:flex;align-items:center;justify-content:space-between;margin-bottom:1rem;}
+.demo-controls .step-label{font-size:0.9rem;font-weight:700;color:var(--text2);}
+.demo-controls .btns{display:flex;gap:8px;}
+
+/* Linked list nodes */
+.ll{display:flex;align-items:center;gap:0;flex-wrap:wrap;margin:6px 0;}
+.ll-node{height:38px;min-width:38px;padding:0 10px;display:flex;align-items:center;justify-content:center;font-family:'JetBrains Mono',monospace;font-size:0.9rem;font-weight:700;border-radius:10px;border:2px solid var(--border);background:#fff;transition:all 0.3s;position:relative;}
+.ll-arrow{color:var(--text3);font-size:0.8rem;margin:0 2px;}
+.ll-node.hl{border-color:var(--orange);background:var(--orange-l);color:var(--orange);}
+.ll-node.done{border-color:var(--green);background:var(--green-l);color:var(--green);}
+.ll-node.active{border-color:var(--purple);background:var(--purple);color:#fff;transform:scale(1.08);}
+.ll-node.picked{border-color:var(--orange);background:var(--orange);color:#fff;}
+
+.ll-label{font-size:0.7rem;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:var(--text3);margin-bottom:2px;margin-top:10px;}
+
+/* Bracket groups */
+.bracket-group{border:2px solid var(--border);border-radius:14px;padding:12px;margin:8px 0;transition:all 0.3s;background:#fff;}
+.bracket-group.hl-left{border-color:var(--purple);background:var(--purple-l);}
+.bracket-group.hl-right{border-color:var(--teal);background:var(--teal-l);}
+.bracket-group.hl-merged{border-color:var(--green);background:var(--green-l);}
+.bracket-group .bg-label{font-size:0.7rem;font-weight:700;text-transform:uppercase;letter-spacing:1px;margin-bottom:6px;}
+.bracket-group.hl-left .bg-label{color:var(--purple);}
+.bracket-group.hl-right .bg-label{color:var(--teal);}
+.bracket-group.hl-merged .bg-label{color:var(--green);}
+
+/* Merge pointer display */
+.merge-area{display:flex;gap:2rem;flex-wrap:wrap;margin:1rem 0;}
+.merge-col{flex:1;min-width:140px;}
+.merge-result{margin-top:1rem;}
+
+/* Tree display */
+.tree-level{display:flex;justify-content:center;gap:12px;margin:10px 0;flex-wrap:wrap;}
+.tree-node{background:#fff;border:2px solid var(--border);border-radius:12px;padding:8px 14px;font-family:'JetBrains Mono',monospace;font-size:0.78rem;font-weight:600;text-align:center;min-width:60px;transition:all 0.3s;}
+.tree-node.active-node{border-color:var(--orange);background:var(--orange-l);color:var(--orange);}
+.tree-node.done-node{border-color:var(--green);background:var(--green-l);color:var(--green);}
+.tree-node.split-node{border-color:var(--purple);background:var(--purple-l);color:var(--purple);}
+.tree-connector{text-align:center;color:var(--text3);font-size:0.8rem;margin:2px 0;}
+
+@media(max-width:500px){
+  .ll-node{height:34px;min-width:34px;padding:0 8px;font-size:0.8rem;}
+  .level h2{font-size:1.3rem;}
+  .tree-node{font-size:0.7rem;padding:6px 10px;min-width:50px;}
+}
+</style>
+</head>
+<body>
+
+<div class="app">
+  <div class="progress-bar" id="progBar"></div>
+  <div id="levels"></div>
+</div>
+
+<script>
+const LEVELS=[
+  {badge:'story',badgeText:'Level 1',title:'You already know how to merge two lists',render:renderL0},
+  {badge:'challenge',badgeText:'Level 2',title:'Merge two lists yourself!',render:renderL1},
+  {badge:'story',badgeText:'Level 3',title:'Now what about K lists?',render:renderL2},
+  {badge:'challenge',badgeText:'Level 4',title:'The tournament strategy',render:renderL3},
+  {badge:'story',badgeText:'Level 5',title:'You just invented divide & conquer!',render:renderL4},
+  {badge:'challenge',badgeText:'Level 6',title:'Watch the full split-and-merge',render:renderL5},
+  {badge:'code',badgeText:'Level 7',title:'From idea to code',render:renderL6},
+  {badge:'boss',badgeText:'Final Level',title:'The complete algorithm',render:renderL7},
+];
+
+let currentLevel=0;
+function init(){renderProgress();renderLevel();}
+function renderProgress(){
+  const bar=document.getElementById('progBar');bar.innerHTML='';
+  for(let i=0;i<LEVELS.length;i++){
+    const d=document.createElement('div');
+    d.className='progress-dot'+(i<currentLevel?' done':'')+(i===currentLevel?' active':'');
+    bar.appendChild(d);
+  }
+}
+function renderLevel(){
+  const c=document.getElementById('levels');c.innerHTML='';
+  const div=document.createElement('div');div.className='level active';
+  const L=LEVELS[currentLevel];
+  div.innerHTML='<span class="level-badge '+L.badge+'">'+L.badgeText+'</span><h2>'+L.title+'</h2>';
+  const content=document.createElement('div');
+  div.appendChild(content);c.appendChild(div);
+  L.render(content);
+  renderProgress();
+  window.scrollTo({top:0,behavior:'smooth'});
+}
+function nextLevel(){if(currentLevel<LEVELS.length-1){currentLevel++;renderLevel();}}
+
+function llHTML(arr,cls){
+  if(!arr||arr.length===0) return '<span style="font-size:0.85rem;color:var(--text3);font-style:italic;">null</span>';
+  let h='<div class="ll">';
+  arr.forEach((v,i)=>{
+    h+='<div class="ll-node'+(cls?' '+cls:'')+'">'+(typeof v==='object'?v.val:v)+'</div>';
+    if(i<arr.length-1) h+='<span class="ll-arrow">→</span>';
+  });
+  h+='</div>';return h;
+}
+
+// ========== LEVEL 0: Merge two sorted lists ==========
+function renderL0(el){
+  let h='<p>Before we tackle K lists, let\'s make sure you\'re solid on merging <strong>two</strong> sorted lists. It\'s the building block for everything.</p>';
+
+  h+='<div class="card">';
+  h+='<div class="ll-label">List A</div>';
+  h+=llHTML([1,3,5],'hl');
+  h+='<div class="ll-label">List B</div>';
+  h+=llHTML([2,4,6],'hl');
+  h+='</div>';
+
+  h+='<p>Both are sorted. To merge them, you just <strong>compare the front of each list</strong>, take the smaller one, and move forward. Like a zipper.</p>';
+
+  h+='<div class="insight green"><div class="ins-title">The two-pointer technique</div>';
+  h+='<p>Point at the start of both lists. Compare. Take the smaller. Move that pointer forward. Repeat until both are empty.</p></div>';
+
+  h+='<div class="card">';
+  h+='<div class="ll-label">Merged result</div>';
+  h+=llHTML([1,2,3,4,5,6],'done');
+  h+='</div>';
+
+  h+='<p>This takes <strong>O(n)</strong> time where n is the total number of nodes. Let\'s try it hands-on.</p>';
+
+  h+='<div class="btn-row"><button class="btn primary" onclick="nextLevel()">Let me try it →</button></div>';
+  el.innerHTML=h;
+}
+
+// ========== LEVEL 1: Merge two lists yourself ==========
+function renderL1(el){
+  let h='<p>Two sorted lists. Click the smaller head node to add it to the merged result.</p>';
+  h+='<div class="card" id="l1card"></div>';
+  h+='<div class="btn-row"><button class="btn primary" id="l1next" style="display:none;" onclick="nextLevel()">Now let\'s tackle K lists →</button></div>';
+  el.innerHTML=h;
+
+  let listA=[1,4,7,9];
+  let listB=[2,5,6,8];
+  let idxA=0,idxB=0;
+  let merged=[];
+
+  function render1(){
+    let c='';
+    const remA=listA.slice(idxA);
+    const remB=listB.slice(idxB);
+    const doneAll=idxA>=listA.length&&idxB>=listB.length;
+
+    c+='<div class="merge-area">';
+
+    c+='<div class="merge-col">';
+    c+='<div class="ll-label">List A</div><div class="ll">';
+    remA.forEach((v,i)=>{
+      const isHead=i===0&&!doneAll;
+      const canPick=isHead&&(idxB>=listB.length||v<=listB[idxB]);
+      c+='<div class="ll-node'+(isHead?' hl':'')+'" style="'+(canPick?'cursor:pointer;':'');
+      c+='" '+(canPick?'onclick="pickL1(\'a\')"':'')+'>'+v+'</div>';
+      if(i<remA.length-1) c+='<span class="ll-arrow">→</span>';
+    });
+    if(remA.length===0) c+='<span style="font-size:0.85rem;color:var(--text3);">done</span>';
+    c+='</div></div>';
+
+    c+='<div class="merge-col">';
+    c+='<div class="ll-label">List B</div><div class="ll">';
+    remB.forEach((v,i)=>{
+      const isHead=i===0&&!doneAll;
+      const canPick=isHead&&(idxA>=listA.length||v<listA[idxA]);
+      c+='<div class="ll-node'+(isHead?' hl':'')+'" style="'+(canPick?'cursor:pointer;':'');
+      c+='" '+(canPick?'onclick="pickL1(\'b\')"':'')+'>'+v+'</div>';
+      if(i<remB.length-1) c+='<span class="ll-arrow">→</span>';
+    });
+    if(remB.length===0) c+='<span style="font-size:0.85rem;color:var(--text3);">done</span>';
+    c+='</div></div>';
+
+    c+='</div>';
+
+    c+='<div class="merge-result">';
+    c+='<div class="ll-label">Merged</div>';
+    if(merged.length>0) c+=llHTML(merged,'done');
+    else c+='<span style="font-size:0.85rem;color:var(--text3);">Click the smaller head node...</span>';
+    c+='</div>';
+
+    if(doneAll){
+      c+='<div class="banner win"><div class="big">Merged!</div><div class="sub">You just did the two-pointer merge. This is the core building block.</div></div>';
+      var nb=document.getElementById('l1next');if(nb)nb.style.display='';
+    } else {
+      const headA=idxA<listA.length?listA[idxA]:Infinity;
+      const headB=idxB<listB.length?listB[idxB]:Infinity;
+      const smaller=headA<=headB?'A':'B';
+      c+='<div style="text-align:center;margin-top:0.75rem;font-size:0.85rem;color:var(--text3);">Hint: pick from list '+smaller+' ('+Math.min(headA,headB)+' is smaller)</div>';
+    }
+
+    document.getElementById('l1card').innerHTML=c;
+  }
+
+  window.pickL1=function(which){
+    if(which==='a'&&idxA<listA.length){merged.push(listA[idxA]);idxA++;}
+    else if(which==='b'&&idxB<listB.length){merged.push(listB[idxB]);idxB++;}
+    // if only one list left, auto-fill
+    if(idxA>=listA.length&&idxB<listB.length){
+      while(idxB<listB.length){merged.push(listB[idxB]);idxB++;}
+    } else if(idxB>=listB.length&&idxA<listA.length){
+      while(idxA<listA.length){merged.push(listA[idxA]);idxA++;}
+    }
+    render1();
+  };
+
+  render1();
+}
+
+// ========== LEVEL 2: Now K lists ==========
+function renderL2(el){
+  let h='<p>OK, you can merge two lists. But what if you have <strong>4 lists</strong>?</p>';
+
+  h+='<div class="card">';
+  ['1→4→5','1→3→4','2→6','0→7→8'].forEach((s,i)=>{
+    h+='<div class="ll-label">List '+(i+1)+'</div>';
+    h+=llHTML(s.split('→').map(Number));
+  });
+  h+='</div>';
+
+  h+='<p>The <strong>naive way</strong>: merge list 1+2, then merge that result with list 3, then with list 4. But that\'s slow — each merge gets bigger and bigger.</p>';
+
+  h+='<div class="insight amber"><div class="ins-title">The naive approach is O(n × k)</div>';
+  h+='<p>Merging list 1+2 scans their combined nodes. Then merging that big result with list 3 scans even more. Each step gets heavier.</p></div>';
+
+  h+='<p>Think about it: if you had to organize a <strong>sports tournament</strong> with 8 teams, would you have team 1 fight everyone one by one? Or would you...</p>';
+
+  h+='<div class="btn-row"><button class="btn primary" onclick="nextLevel()">Pair them up! →</button></div>';
+  el.innerHTML=h;
+}
+
+// ========== LEVEL 3: Tournament strategy ==========
+function renderL3(el){
+  let h='<p>Exactly! <strong>Pair them up</strong>, like a tournament bracket. Each pair merges, then the winners pair up again, until there\'s one list left.</p>';
+  h+='<p>Click each pair to merge them:</p>';
+
+  h+='<div class="card" id="l3card"></div>';
+  h+='<div class="btn-row"><button class="btn primary" id="l3next" style="display:none;" onclick="nextLevel()">I see the pattern →</button></div>';
+  el.innerHTML=h;
+
+  const initial=[[1,4,5],[1,3,4],[2,6],[0,7,8]];
+  let round=[...initial.map(a=>[...a])];
+  let roundNum=0;
+  let mergedPairs=[];
+  let allDone=false;
+
+  function render3(){
+    let c='';
+
+    if(!allDone){
+      c+='<div style="font-size:0.85rem;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:1px;margin-bottom:10px;">Round '+(roundNum+1)+': '+round.length+' lists → merge pairs</div>';
+
+      for(let i=0;i<round.length;i+=2){
+        if(i+1<round.length){
+          const pairIdx=i/2;
+          const alreadyMerged=mergedPairs[pairIdx];
+          if(alreadyMerged){
+            c+='<div class="bracket-group hl-merged"><div class="bg-label">Merged</div>';
+            c+=llHTML(alreadyMerged,'done');
+            c+='</div>';
+          } else {
+            c+='<div class="bracket-group" style="cursor:pointer;" onclick="mergePair3('+i+')">';
+            c+='<div class="bg-label" style="color:var(--orange);">Click to merge this pair</div>';
+            c+='<div class="ll-label" style="margin-top:0;">List</div>';
+            c+=llHTML(round[i],'hl');
+            c+='<div class="ll-label">List</div>';
+            c+=llHTML(round[i+1],'hl');
+            c+='</div>';
+          }
+        } else {
+          c+='<div class="bracket-group"><div class="bg-label" style="color:var(--text3);">No pair — moves to next round</div>';
+          c+=llHTML(round[i]);
+          c+='</div>';
+        }
+      }
+
+      const pairsTotal=Math.floor(round.length/2);
+      const pairsDone=mergedPairs.filter(x=>x).length;
+      if(pairsDone===pairsTotal&&pairsTotal>0){
+        c+='<div style="text-align:center;margin-top:1rem;">';
+        c+='<button class="btn primary" onclick="nextRound3()">Next round →</button></div>';
+      }
+    } else {
+      c+='<div class="bracket-group hl-merged"><div class="bg-label">Final merged list</div>';
+      c+=llHTML(round[0],'done');
+      c+='</div>';
+      c+='<div class="banner win"><div class="big">All merged in just '+roundNum+' rounds!</div>';
+      c+='<div class="sub">4 lists → 2 pairs → 2 lists → 1 pair → done! That\'s log₂(4) = 2 rounds.</div></div>';
+      var nb=document.getElementById('l3next');if(nb)nb.style.display='';
+    }
+
+    document.getElementById('l3card').innerHTML=c;
+  }
+
+  function mergeTwoArrays(a,b){
+    const res=[];let i=0,j=0;
+    while(i<a.length&&j<b.length){
+      if(a[i]<=b[j]) res.push(a[i++]);
+      else res.push(b[j++]);
+    }
+    while(i<a.length) res.push(a[i++]);
+    while(j<b.length) res.push(b[j++]);
+    return res;
+  }
+
+  window.mergePair3=function(i){
+    const pairIdx=i/2;
+    if(mergedPairs[pairIdx]) return;
+    mergedPairs[pairIdx]=mergeTwoArrays(round[i],round[i+1]);
+    render3();
+  };
+
+  window.nextRound3=function(){
+    const newRound=[];
+    for(let i=0;i<round.length;i+=2){
+      if(i+1<round.length){
+        newRound.push(mergedPairs[i/2]);
+      } else {
+        newRound.push(round[i]);
+      }
+    }
+    round=newRound;
+    mergedPairs=[];
+    roundNum++;
+    if(round.length===1) allDone=true;
+    render3();
+  };
+
+  render3();
+}
+
+// ========== LEVEL 4: You invented divide & conquer ==========
+function renderL4(el){
+  let h='<p>What you just did has a name: <strong>Divide & Conquer</strong>. Same idea as merge sort!</p>';
+
+  h+='<div class="insight orange"><div class="ins-title">Divide</div>';
+  h+='<p>Split the K lists into two halves. Keep splitting until each half has just 1 list.</p></div>';
+
+  h+='<div class="insight"><div class="ins-title">Conquer</div>';
+  h+='<p>Merge pairs of lists bottom-up. Two small lists merge into one medium list. Two medium lists merge into one big list. Until there\'s one list left.</p></div>';
+
+  h+='<div class="insight green"><div class="ins-title">Why is this faster?</div>';
+  h+='<p>The naive approach merges one list at a time — each merge gets bigger. With divide & conquer, <strong>all merges at the same level are the same size</strong>. And there are only <strong>log₂(k)</strong> levels. Total work: <strong>O(n × log k)</strong> instead of O(n × k).</p></div>';
+
+  h+='<div class="card">';
+  h+='<div style="text-align:center;font-size:0.85rem;color:var(--text2);line-height:2;">';
+  h+='<div><strong style="color:var(--orange);">Naive (merge one by one):</strong> 4 lists, each size ~n</div>';
+  h+='<div>Merge 1: n+n = 2n work</div>';
+  h+='<div>Merge 2: 2n+n = 3n work</div>';
+  h+='<div>Merge 3: 3n+n = 4n work</div>';
+  h+='<div>Total: <strong style="color:var(--red);">~10n</strong></div>';
+  h+='<br>';
+  h+='<div><strong style="color:var(--green);">Divide & Conquer (pair up):</strong></div>';
+  h+='<div>Round 1: merge (n+n) + (n+n) = 4n work</div>';
+  h+='<div>Round 2: merge (2n+2n) = 4n work</div>';
+  h+='<div>Total: <strong style="color:var(--green);">~8n</strong> (and the gap grows with more lists!)</div>';
+  h+='</div></div>';
+
+  h+='<p>With 100 lists, naive does ~5000n work. Divide & conquer does ~700n. Massive difference!</p>';
+
+  h+='<div class="btn-row"><button class="btn primary" onclick="nextLevel()">Show me the full process →</button></div>';
+  el.innerHTML=h;
+}
+
+// ========== LEVEL 5: Watch full split-and-merge ==========
+function renderL5(el){
+  let h='<p>Watch the algorithm split and merge <strong>6 lists</strong> step by step. This is exactly how the recursive code works.</p>';
+  h+='<div class="card" id="l5card"></div>';
+  h+='<div class="btn-row"><button class="btn primary" id="l5next" style="display:none;" onclick="nextLevel()">Now show me the code →</button></div>';
+  el.innerHTML=h;
+
+  const lists=[[1,5],[2,4],[3,9],[6,8],[0,7],[10,11]];
+
+  function mergeTwoArrays(a,b){
+    const res=[];let i=0,j=0;
+    while(i<a.length&&j<b.length){if(a[i]<=b[j])res.push(a[i++]);else res.push(b[j++]);}
+    while(i<a.length)res.push(a[i++]);
+    while(j<b.length)res.push(b[j++]);
+    return res;
+  }
+
+  const steps=[];
+
+  function buildSteps(arr,lo,hi,depth){
+    if(lo===hi){
+      steps.push({type:'base',list:arr[lo],lo,hi,depth,desc:'List '+(lo+1)+' is alone — nothing to split.'});
+      return arr[lo];
+    }
+    const mid=Math.floor((lo+hi)/2);
+    steps.push({type:'split',lo,hi,mid,depth,desc:'Split lists '+(lo+1)+'–'+(hi+1)+' into ['+(lo+1)+'–'+(mid+1)+'] and ['+(mid+2)+'–'+(hi+1)+']'});
+
+    const left=buildSteps(arr,lo,mid,depth+1);
+    const right=buildSteps(arr,mid+1,hi,depth+1);
+    const merged=mergeTwoArrays(left,right);
+
+    steps.push({type:'merge',lo,hi,mid,depth,left,right,merged,desc:'Merge ['+(lo+1)+'–'+(mid+1)+'] and ['+(mid+2)+'–'+(hi+1)+'] → ['+merged.join(',')+']'});
+    return merged;
+  }
+
+  buildSteps(lists,0,lists.length-1,0);
+
+  let cur=0;
+
+  function render5(){
+    const s=steps[cur];
+    let c='';
+
+    c+='<div class="demo-controls"><span class="step-label">Step '+(cur+1)+' / '+steps.length+'</span>';
+    c+='<div class="btns">';
+    c+='<button class="btn small outline" id="l5prev" '+(cur===0?'disabled':'')+'>← Back</button>';
+    c+='<button class="btn small primary" id="l5fwd" '+(cur===steps.length-1?'disabled':'')+'>Next →</button>';
+    c+='</div></div>';
+
+    const typeLabel=s.type==='split'?'SPLIT':s.type==='merge'?'MERGE':'BASE';
+    const typeColor=s.type==='split'?'var(--purple)':s.type==='merge'?'var(--green)':'var(--text3)';
+    c+='<div style="display:flex;align-items:center;gap:8px;margin-bottom:0.75rem;">';
+    c+='<span style="font-size:0.7rem;font-weight:800;letter-spacing:2px;text-transform:uppercase;padding:3px 10px;border-radius:6px;background:'+(s.type==='split'?'var(--purple-l)':s.type==='merge'?'var(--green-l)':'var(--bg)')+';color:'+typeColor+';">'+typeLabel+'</span>';
+    c+='<span style="font-size:0.7rem;color:var(--text3);">depth: '+s.depth+'</span>';
+    c+='</div>';
+
+    c+='<p style="font-weight:700;font-size:0.95rem;margin-bottom:1rem;">'+s.desc+'</p>';
+
+    if(s.type==='split'){
+      c+='<div style="margin-bottom:0.5rem;font-size:0.8rem;color:var(--text3);">Original group:</div>';
+      for(let i=s.lo;i<=s.hi;i++){
+        const side=i<=s.mid?'hl-left':'hl-right';
+        c+='<div class="bracket-group '+side+'" style="padding:8px 12px;margin:4px 0;">';
+        c+='<div class="bg-label">List '+(i+1)+'</div>';
+        c+=llHTML(lists[i]);
+        c+='</div>';
+      }
+    } else if(s.type==='merge'){
+      c+='<div class="merge-area">';
+      c+='<div class="merge-col"><div class="bracket-group hl-left" style="padding:8px 12px;">';
+      c+='<div class="bg-label">Left half</div>';
+      c+=llHTML(s.left);
+      c+='</div></div>';
+      c+='<div class="merge-col"><div class="bracket-group hl-right" style="padding:8px 12px;">';
+      c+='<div class="bg-label">Right half</div>';
+      c+=llHTML(s.right);
+      c+='</div></div>';
+      c+='</div>';
+      c+='<div class="connect">↓ merge ↓</div>';
+      c+='<div class="bracket-group hl-merged" style="padding:8px 12px;">';
+      c+='<div class="bg-label">Result</div>';
+      c+=llHTML(s.merged,'done');
+      c+='</div>';
+    } else {
+      c+='<div class="bracket-group" style="padding:8px 12px;">';
+      c+='<div class="bg-label" style="color:var(--text3);">Single list — return as is</div>';
+      c+=llHTML(s.list);
+      c+='</div>';
+    }
+
+    if(cur===steps.length-1){
+      c+='<div class="banner win" style="margin-top:1rem;"><div class="big">All 6 lists merged!</div>';
+      c+='<div class="sub">Split into halves recursively, then merge back up. That\'s divide & conquer.</div></div>';
+      var nb=document.getElementById('l5next');if(nb)nb.style.display='';
+    }
+
+    document.getElementById('l5card').innerHTML=c;
+    var p=document.getElementById('l5prev');if(p)p.onclick=function(){if(cur>0){cur--;render5();}};
+    var f=document.getElementById('l5fwd');if(f)f.onclick=function(){if(cur<steps.length-1){cur++;render5();}};
+  }
+
+  render5();
+}
+
+// ========== LEVEL 6: Code ==========
+function renderL6(el){
+  let h='<p>The algorithm has two functions. You already understand both.</p>';
+
+  h+='<div class="insight green"><div class="ins-title">Function 1: Merge two sorted lists</div>';
+  h+='<p>You did this in Level 2 — compare heads, take the smaller, advance the pointer.</p></div>';
+
+  h+='<div class="connect">↓</div>';
+
+  h+='<div class="code-box">';
+  h+='<div><span class="type">ListNode</span> <span class="fn">mergeTwoLists</span>(<span class="type">ListNode</span> a, <span class="type">ListNode</span> b) {</div>';
+  h+='<div>    <span class="type">ListNode</span> dummy = <span class="kw">new</span> <span class="fn">ListNode</span>(<span class="num">0</span>);</div>';
+  h+='<div>    <span class="type">ListNode</span> cur = dummy;</div>';
+  h+='<div>    <span class="kw">while</span> (a != <span class="num">null</span> && b != <span class="num">null</span>) {</div>';
+  h+='<div>        <span class="kw">if</span> (a.val <= b.val) {</div>';
+  h+='<div>            cur.next = a;  <span class="cm">// take from a</span></div>';
+  h+='<div>            a = a.next;</div>';
+  h+='<div>        } <span class="kw">else</span> {</div>';
+  h+='<div>            cur.next = b;  <span class="cm">// take from b</span></div>';
+  h+='<div>            b = b.next;</div>';
+  h+='<div>        }</div>';
+  h+='<div>        cur = cur.next;</div>';
+  h+='<div>    }</div>';
+  h+='<div>    cur.next = (a != <span class="num">null</span>) ? a : b; <span class="cm">// attach remainder</span></div>';
+  h+='<div>    <span class="kw">return</span> dummy.next;</div>';
+  h+='<div>}</div>';
+  h+='</div>';
+
+  h+='<div class="insight orange"><div class="ins-title">Function 2: Split and conquer</div>';
+  h+='<p>You did this in Levels 4 & 6 — split the array in half, recurse on each half, merge the results.</p></div>';
+
+  h+='<div class="connect">↓</div>';
+
+  h+='<div class="code-box">';
+  h+='<div><span class="type">ListNode</span> <span class="fn">mergeKLists</span>(<span class="type">ListNode</span>[] lists) {</div>';
+  h+='<div>    <span class="kw">if</span> (lists.length == <span class="num">0</span>) <span class="kw">return null</span>;</div>';
+  h+='<div>    <span class="kw">return</span> <span class="fn">split</span>(lists, <span class="num">0</span>, lists.length - <span class="num">1</span>);</div>';
+  h+='<div>}</div>';
+  h+='<div></div>';
+  h+='<div><span class="type">ListNode</span> <span class="fn">split</span>(<span class="type">ListNode</span>[] lists, <span class="type">int</span> lo, <span class="type">int</span> hi) {</div>';
+  h+='<div>    <span class="kw">if</span> (lo == hi) <span class="kw">return</span> lists[lo]; <span class="cm">// single list, done</span></div>';
+  h+='<div></div>';
+  h+='<div>    <span class="type">int</span> mid = (lo + hi) / <span class="num">2</span>;</div>';
+  h+='<div>    <span class="type">ListNode</span> left = <span class="fn">split</span>(lists, lo, mid);     <span class="cm">// left half</span></div>';
+  h+='<div>    <span class="type">ListNode</span> right = <span class="fn">split</span>(lists, mid+<span class="num">1</span>, hi); <span class="cm">// right half</span></div>';
+  h+='<div></div>';
+  h+='<div>    <span class="kw">return</span> <span class="fn">mergeTwoLists</span>(left, right);    <span class="cm">// merge them</span></div>';
+  h+='<div>}</div>';
+  h+='</div>';
+
+  h+='<div class="insight amber"><div class="ins-title">That\'s the entire algorithm!</div>';
+  h+='<p>The split function is just 6 lines. Base case: one list, return it. Otherwise: split in half, recurse, merge the two results.</p></div>';
+
+  h+='<div class="btn-row"><button class="btn primary" onclick="nextLevel()">Show me everything →</button></div>';
+  el.innerHTML=h;
+}
+
+// ========== LEVEL 7: Full code ==========
+function renderL7(el){
+  let h='<p>Every line maps back to something you played through:</p>';
+
+  h+='<div class="code-box" style="font-size:0.76rem;line-height:2;">';
+  h+='<div><span class="kw">class</span> <span class="type">Solution</span> {</div>';
+  h+='<div>    <span class="kw">public</span> <span class="type">ListNode</span> <span class="fn">mergeKLists</span>(<span class="type">ListNode</span>[] lists) {</div>';
+  h+='<div>        <span class="kw">if</span> (lists.length == <span class="num">0</span>) <span class="kw">return null</span>;</div>';
+  h+='<div>        <span class="kw">return</span> <span class="fn">split</span>(lists, <span class="num">0</span>, lists.length - <span class="num">1</span>);</div>';
+  h+='<div>    }</div>';
+  h+='<div></div>';
+  h+='<div>    <span class="cm">// LEVEL 4: The tournament — split into halves</span></div>';
+  h+='<div>    <span class="kw">private</span> <span class="type">ListNode</span> <span class="fn">split</span>(<span class="type">ListNode</span>[] lists, <span class="type">int</span> lo, <span class="type">int</span> hi) {</div>';
+  h+='<div>        <span class="kw">if</span> (lo == hi) <span class="kw">return</span> lists[lo];</div>';
+  h+='<div></div>';
+  h+='<div>        <span class="type">int</span> mid = lo + (hi - lo) / <span class="num">2</span>;</div>';
+  h+='<div>        <span class="type">ListNode</span> left  = <span class="fn">split</span>(lists, lo, mid);</div>';
+  h+='<div>        <span class="type">ListNode</span> right = <span class="fn">split</span>(lists, mid + <span class="num">1</span>, hi);</div>';
+  h+='<div></div>';
+  h+='<div>        <span class="kw">return</span> <span class="fn">mergeTwoLists</span>(left, right);</div>';
+  h+='<div>    }</div>';
+  h+='<div></div>';
+  h+='<div>    <span class="cm">// LEVEL 2: Merge two sorted lists (the zipper)</span></div>';
+  h+='<div>    <span class="kw">private</span> <span class="type">ListNode</span> <span class="fn">mergeTwoLists</span>(<span class="type">ListNode</span> a, <span class="type">ListNode</span> b) {</div>';
+  h+='<div>        <span class="type">ListNode</span> dummy = <span class="kw">new</span> <span class="fn">ListNode</span>(<span class="num">0</span>);</div>';
+  h+='<div>        <span class="type">ListNode</span> cur = dummy;</div>';
+  h+='<div></div>';
+  h+='<div>        <span class="kw">while</span> (a != <span class="num">null</span> && b != <span class="num">null</span>) {</div>';
+  h+='<div>            <span class="kw">if</span> (a.val <= b.val) {</div>';
+  h+='<div>                cur.next = a;</div>';
+  h+='<div>                a = a.next;</div>';
+  h+='<div>            } <span class="kw">else</span> {</div>';
+  h+='<div>                cur.next = b;</div>';
+  h+='<div>                b = b.next;</div>';
+  h+='<div>            }</div>';
+  h+='<div>            cur = cur.next;</div>';
+  h+='<div>        }</div>';
+  h+='<div></div>';
+  h+='<div>        cur.next = (a != <span class="num">null</span>) ? a : b;</div>';
+  h+='<div>        <span class="kw">return</span> dummy.next;</div>';
+  h+='<div>    }</div>';
+  h+='<div>}</div>';
+  h+='</div>';
+
+  h+='<div class="banner win" style="margin-top:2rem;"><div class="big">You learned Merge K Sorted Lists!</div>';
+  h+='<div class="sub">Not by memorizing — by merging pairs, running a tournament, and watching the recursion unfold.</div></div>';
+
+  h+='<div class="insight" style="margin-top:1.5rem;"><div class="ins-title">The whole algorithm in one sentence</div>';
+  h+='<p>Recursively split the K lists into two halves until each half is a single list, then merge pairs back up using the standard two-pointer merge.</p></div>';
+
+  h+='<div class="insight teal" style="margin-top:1rem;"><div class="ins-title">Complexity</div>';
+  h+='<p><strong>Time:</strong> O(n × log k) — n total nodes, log k rounds of merging.<br>';
+  h+='<strong>Space:</strong> O(log k) for the recursion stack.</p></div>';
+
+  el.innerHTML=h;
+}
+
+init();
+</script>
+</body>
+</html>
